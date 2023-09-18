@@ -27,7 +27,21 @@ public class CmdMoneyDeposit extends MoneyCommand {
 
     @Override
     public void perform(CommandContext context) {
-        double amount = context.argAsDouble(0, 0d);
+        double amount = context.argAsDouble(0, -1D);
+
+        if(amount <= 0.0D){
+            if(context.argAsString(0, "").equalsIgnoreCase("all")){
+                amount = Econ.getBalance(context.fPlayer);
+                if(amount <= 0.0D){
+                    context.msg(TL.COMMAND_MONEYDEPOSIT_FAIL);
+                    return;
+                }
+            }else{
+                context.msg(TL.COMMAND_MONEYDEPOSIT_FAIL);
+                return;
+            }
+        }
+
         EconomyParticipator faction = context.argAsFaction(1, context.faction);
         if (faction == null) {
             return;

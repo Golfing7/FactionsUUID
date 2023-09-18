@@ -39,7 +39,6 @@ public class IntegrationManager implements Listener {
                 }
             }
         }),
-        LWC("LWC", com.massivecraft.factions.integration.LWC::setup),
         MAGIC("Magic", (p) -> Magic.init(p)), // RESIST THE URGE TO REPLACE WITH LAMBDA REFERENCE
         PLACEHOLDERAPI("PlaceholderAPI", (p) -> FactionsPlugin.getInstance().setupPlaceholderAPI()),
         PLACEHOLDERAPI_OTHER("MVdWPlaceholderAPI", (p) -> FactionsPlugin.getInstance().setupOtherPlaceholderAPI()),
@@ -53,9 +52,6 @@ public class IntegrationManager implements Listener {
             String version = plugin.getDescription().getVersion();
             if (version.startsWith("6")) {
                 f.setWorldGuard(new Worldguard6(plugin));
-                f.getLogger().info("Found support for WorldGuard version " + version);
-            } else if (version.startsWith("7")) {
-                f.setWorldGuard(new Worldguard7());
                 f.getLogger().info("Found support for WorldGuard version " + version);
             } else {
                 f.log(Level.WARNING, "Found WorldGuard but couldn't support this version: " + version);

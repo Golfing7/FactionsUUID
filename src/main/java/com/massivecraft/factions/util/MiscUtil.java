@@ -137,6 +137,7 @@ public class MiscUtil {
         List<FPlayer> moderators = new ArrayList<>();
         List<FPlayer> normal = new ArrayList<>();
         List<FPlayer> recruit = new ArrayList<>();
+        List<FPlayer> alt = new ArrayList<>();
 
         for (FPlayer player : players) {
 
@@ -166,6 +167,9 @@ public class MiscUtil {
                 case RECRUIT:
                     recruit.add(player);
                     break;
+                case ALT:
+                    alt.add(player);
+                    break;
             }
         }
 
@@ -175,6 +179,7 @@ public class MiscUtil {
         ret.addAll(moderators);
         ret.addAll(normal);
         ret.addAll(recruit);
+        ret.addAll(alt);
         return ret;
     }
 }

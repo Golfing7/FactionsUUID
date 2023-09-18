@@ -29,6 +29,7 @@ public enum PermissibleAction {
     TERRITORY(true, DefaultPermissionsConfig.Permissions::getTerritory, TL.PERM_TERRITORY, TL.PERM_SHORT_TERRITORY, "GRASS_BLOCK"),
     OWNER(true, DefaultPermissionsConfig.Permissions::getOwner, TL.PERM_OWNER, TL.PERM_SHORT_OWNER, "FENCE_GATE"),
     HOME(DefaultPermissionsConfig.Permissions::getHome, TL.PERM_HOME, TL.PERM_SHORT_HOME, "TORCH"),
+    REPEATER(DefaultPermissionsConfig.Permissions::getRepeater, TL.PERM_REPEATER, TL.PERM_SHORT_REPEATER, "DIODE"),
     SETHOME(true, DefaultPermissionsConfig.Permissions::getSetHome, TL.PERM_SETHOME, TL.PERM_SHORT_SETHOME, "COMPASS"),
     LISTCLAIMS(true, DefaultPermissionsConfig.Permissions::getListClaims, TL.PERM_LISTCLAIMS, TL.PERM_SHORT_LISTCLAIMS, "MAP"),
     SETWARP(true, DefaultPermissionsConfig.Permissions::getSetWarp, TL.PERM_SETWARP, TL.PERM_SHORT_SETWARP, "END_PORTAL_FRAME"),
@@ -36,6 +37,8 @@ public enum PermissibleAction {
     TNTWITHDRAW(true, DefaultPermissionsConfig.Permissions::getTNTWithdraw, TL.PERM_TNTWITHDRAW, TL.PERM_SHORT_TNTWITHDRAW, "TNT"),
     WARP(DefaultPermissionsConfig.Permissions::getWarp, TL.PERM_WARP, TL.PERM_SHORT_WARP, "ENDER_PEARL"),
     FLY(DefaultPermissionsConfig.Permissions::getFly, TL.PERM_FLY, TL.PERM_SHORT_FLY, "FEATHER"),
+    ROSTERCONTROL(true, DefaultPermissionsConfig.Permissions::getRosterControl, TL.PERM_ROSTERCONTROL, TL.PERM_SHORT_ROSTERCONTROL, "ANVIL"),
+    CLAIMCORNER(true, DefaultPermissionsConfig.Permissions::getCorner, TL.PERM_CLAIMCORNER, TL.PERM_SHORT_CLAIMCORNER, "MAP")
     ;
 
     private final boolean factionOnly;

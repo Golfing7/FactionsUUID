@@ -27,6 +27,7 @@ public class DefaultPermissionsConfig {
             protected PermissiblePermInfo moderator = new PermissiblePermInfo();
             protected PermissiblePermInfo normal = new PermissiblePermInfo();
             protected PermissiblePermInfo recruit = new PermissiblePermInfo();
+            protected PermissiblePermInfo alt = new PermissiblePermInfo();
 
             public PermissiblePermInfo get(Permissible permissible) {
                 if (permissible instanceof Role) {
@@ -39,6 +40,8 @@ public class DefaultPermissionsConfig {
                             return this.normal;
                         case RECRUIT:
                             return this.recruit;
+                        case ALT:
+                            return this.alt;
                     }
                 }
                 // TODO print warning
@@ -173,6 +176,41 @@ public class DefaultPermissionsConfig {
             return this.fly;
         }
 
+        public FactionOnlyPermInfo getRosterControl(){
+            return this.rosterControl;
+        }
+
+        public FullPermInfo getRepeater(){
+            return this.repeater;
+        }
+
+        public FullPermInfo getCorner(){return this.corner;}
+
+        @Comment("Can change repeaters")
+        private FullPermInfo repeater = new FullPermInfo(){
+            {
+                this.coleader.value = true;
+                this.moderator.value = true;
+                this.normal.value = true;
+                this.recruit.value = true;
+            }
+        };
+
+        @Comment("Can claim a corner")
+        private FullPermInfo corner = new FullPermInfo(){
+            {
+                this.coleader.value = true;
+            }
+        };
+
+        @Comment("Can control roster")
+        private FactionOnlyPermInfo rosterControl = new FactionOnlyPermInfo(){
+            {
+                this.coleader.value = true;
+                this.moderator.value = true;
+            }
+        };
+
         @Comment("Can ban others from the faction")
         private FactionOnlyPermInfo ban = new FactionOnlyPermInfo() {
             {
@@ -216,6 +254,7 @@ public class DefaultPermissionsConfig {
                 this.moderator.value = true;
                 this.normal.value = true;
                 this.recruit.value = true;
+                this.alt.value = true;
                 this.ally.value = true;
             }
         };
@@ -226,6 +265,7 @@ public class DefaultPermissionsConfig {
                 this.moderator.value = true;
                 this.normal.value = true;
                 this.recruit.value = true;
+                this.alt.value = true;
                 this.ally.value = true;
             }
         };
@@ -236,6 +276,7 @@ public class DefaultPermissionsConfig {
                 this.moderator.value = true;
                 this.normal.value = true;
                 this.recruit.value = true;
+                this.alt.value = true;
                 this.ally.value = true;
             }
         };
@@ -277,6 +318,7 @@ public class DefaultPermissionsConfig {
                 this.moderator.value = true;
                 this.normal.value = true;
                 this.recruit.value = true;
+                this.alt.value = true;
             }
         };
         @Comment("Can see faction claim list")
@@ -330,6 +372,7 @@ public class DefaultPermissionsConfig {
                 this.moderator.value = true;
                 this.normal.value = true;
                 this.recruit.value = true;
+                this.alt.value = true;
                 this.ally.value = true;
             }
         };
@@ -355,6 +398,7 @@ public class DefaultPermissionsConfig {
                 this.moderator.value = true;
                 this.normal.value = true;
                 this.recruit.value = true;
+                this.alt.value = true;
             }
         };
         @Comment("Can fly in faction territory")
@@ -365,6 +409,7 @@ public class DefaultPermissionsConfig {
                 this.normal.value = true;
                 this.recruit.value = true;
                 this.ally.value = true;
+                this.alt.value = true;
             }
         };
     }

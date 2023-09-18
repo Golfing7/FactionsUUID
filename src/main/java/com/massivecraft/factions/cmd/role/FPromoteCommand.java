@@ -32,6 +32,11 @@ public class FPromoteCommand extends FCommand {
             return;
         }
 
+        if(target.getRole() == Role.ALT){
+            context.msg(TL.COMMAND_PROMOTE_ISALT);
+            return;
+        }
+
         if (!target.getFaction().equals(context.faction)) {
             context.msg(TL.COMMAND_PROMOTE_WRONGFACTION, target.getName());
             return;

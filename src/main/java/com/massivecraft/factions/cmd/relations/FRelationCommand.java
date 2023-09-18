@@ -77,7 +77,7 @@ public abstract class FRelationCommand extends FCommand {
         // if the relation change was successful
         if (targetRelation.value == currentRelation.value) {
             // trigger the faction relation event
-            FactionRelationEvent relationEvent = new FactionRelationEvent(context.faction, them, oldRelation, currentRelation);
+            FactionRelationEvent relationEvent = new FactionRelationEvent(context.fPlayer, context.faction, them, oldRelation, currentRelation);
             Bukkit.getServer().getPluginManager().callEvent(relationEvent);
 
             them.msg(TL.COMMAND_RELATIONS_MUTUAL, currentRelationColor + targetRelation.getTranslation(), currentRelationColor + context.faction.getTag());

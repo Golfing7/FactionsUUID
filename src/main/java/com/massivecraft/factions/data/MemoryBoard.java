@@ -9,15 +9,17 @@ import com.massivecraft.factions.FPlayers;
 import com.massivecraft.factions.Faction;
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.FactionsPlugin;
-import com.massivecraft.factions.integration.LWC;
 import com.massivecraft.factions.perms.Relation;
 import com.massivecraft.factions.util.AsciiCompass;
 import com.massivecraft.factions.util.TL;
 import mkremins.fanciful.FancyMessage;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
+import org.bukkit.WorldBorder;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,11 +29,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public abstract class MemoryBoard extends Board {
 
-    public class MemoryBoardMap extends HashMap<FLocation, String> {
+    public class MemoryBoardMap extends ConcurrentHashMap<FLocation, String> {
         private static final long serialVersionUID = -6689617828610585368L;
 
         Multimap<String, FLocation> factionToLandMap = HashMultimap.create();
@@ -72,7 +75,8 @@ public abstract class MemoryBoard extends Board {
             Collection<FLocation> fLocations = factionToLandMap.removeAll(factionId);
             for (FPlayer fPlayer : FPlayers.getInstance().getOnlinePlayers()) {
                 if (fLocations.contains(fPlayer.getLastStoodAt())) {
-                    if (FactionsPlugin.getInstance().conf().commands().fly().isEnable() && !fPlayer.isAdminBypassing() && fPlayer.isFlying()) {
+                    if (FactionsPlugin.getInstance().conf().commands().fly().isEnable() && !fPlayer.isAdminBypassing() && fPlayer.isFlying()
+                            && !fPlayer.getPlayer().hasPermission("essentials.fly")) {
                         fPlayer.setFlying(false);
                     }
                     if (fPlayer.isWarmingUp()) {
@@ -121,18 +125,44 @@ public abstract class MemoryBoard extends Board {
     }
 
     public void removeAt(FLocation flocation) {
+        removeAt(flocation, false);
+    }
+
+    public void removeAt(FLocation flocation, boolean light) {
         Faction faction = getFactionAt(flocation);
         faction.getWarps().values().removeIf(lazyLocation -> flocation.isInChunk(lazyLocation.getLocation()));
-        for (Entity entity : flocation.getChunk().getEntities()) {
-            if (entity instanceof Player) {
-                FPlayer fPlayer = FPlayers.getInstance().getByPlayer((Player) entity);
-                if (!fPlayer.isAdminBypassing() && fPlayer.isFlying()) {
-                    fPlayer.setFlying(false);
+        if (!light) {
+            if (Bukkit.isPrimaryThread()) {
+                for (Entity entity : flocation.getChunk().getEntities()) {
+                    if (entity instanceof Player) {
+                        FPlayer fPlayer = FPlayers.getInstance().getByPlayer((Player) entity);
+                        if (!fPlayer.isAdminBypassing() && fPlayer.isFlying() && !fPlayer.getPlayer().hasPermission("essentials.fly")) {
+                            fPlayer.setFlying(false);
+                        }
+                        if (fPlayer.isWarmingUp()) {
+                            fPlayer.clearWarmup();
+                            fPlayer.msg(TL.WARMUPS_CANCELLED);
+                        }
+                    }
                 }
-                if (fPlayer.isWarmingUp()) {
-                    fPlayer.clearWarmup();
-                    fPlayer.msg(TL.WARMUPS_CANCELLED);
-                }
+            } else {
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        for (Entity entity : flocation.getChunk().getEntities()) {
+                            if (entity instanceof Player) {
+                                FPlayer fPlayer = FPlayers.getInstance().getByPlayer((Player) entity);
+                                if (!fPlayer.isAdminBypassing() && fPlayer.isFlying() && !fPlayer.getPlayer().hasPermission("essentials.fly")) {
+                                    fPlayer.setFlying(false);
+                                }
+                                if (fPlayer.isWarmingUp()) {
+                                    fPlayer.clearWarmup();
+                                    fPlayer.msg(TL.WARMUPS_CANCELLED);
+                                }
+                            }
+                        }
+                    }
+                }.runTask(FactionsPlugin.getInstance());
             }
         }
         clearOwnershipAt(flocation);
@@ -158,6 +188,7 @@ public abstract class MemoryBoard extends Board {
         Faction faction = getFactionAt(flocation);
         if (faction != null && faction.isNormal()) {
             faction.clearClaimOwnership(flocation);
+            faction.setSpawnerChunk(flocation, false);
         }
     }
 
@@ -166,6 +197,7 @@ public abstract class MemoryBoard extends Board {
         if (faction != null && faction.isNormal()) {
             faction.clearAllClaimOwnership();
             faction.clearWarps();
+            faction.clearSpawnerChunks();
         }
         clean(factionId);
     }
@@ -173,19 +205,12 @@ public abstract class MemoryBoard extends Board {
     public void unclaimAllInWorld(String factionId, World world) {
         for (FLocation loc : getAllClaims(factionId)) {
             if (loc.getWorldName().equals(world.getName())) {
-                removeAt(loc);
+                removeAt(loc, true);
             }
         }
     }
 
     public void clean(String factionId) {
-        if (LWC.getEnabled() && FactionsPlugin.getInstance().conf().lwc().isResetLocksOnUnclaim()) {
-            for (Entry<FLocation, String> entry : flocationIds.entrySet()) {
-                if (entry.getValue().equals(factionId)) {
-                    LWC.clearAllLocks(entry.getKey());
-                }
-            }
-        }
 
         flocationIds.removeFaction(factionId);
     }
@@ -247,9 +272,6 @@ public abstract class MemoryBoard extends Board {
         while (iter.hasNext()) {
             Entry<FLocation, String> entry = iter.next();
             if (!Factions.getInstance().isValidFactionId(entry.getValue())) {
-                if (LWC.getEnabled() && FactionsPlugin.getInstance().conf().lwc().isResetLocksOnUnclaim()) {
-                    LWC.clearAllLocks(entry.getKey());
-                }
                 FactionsPlugin.getInstance().log("Board cleaner removed " + entry.getValue() + " from " + entry.getKey());
                 iter.remove();
             }
@@ -310,6 +332,16 @@ public abstract class MemoryBoard extends Board {
         Map<String, Character> fList = new HashMap<>();
         int chrIdx = 0;
 
+        WorldBorder worldBorder = flocation.getWorld().getWorldBorder();
+
+        double radius = (worldBorder.getSize() / 2) - 0.001D;
+
+        double cxMin = Math.floor((worldBorder.getCenter().getX() - radius) / 16.0D);
+        double cxMax = Math.floor((worldBorder.getCenter().getX() + radius) / 16.0D);
+
+        double czMin = Math.floor((worldBorder.getCenter().getZ() - radius) / 16.0D);
+        double czMax = Math.floor((worldBorder.getCenter().getZ() + radius) / 16.0D);
+
         // For each row
         for (int dz = 0; dz < height; dz++) {
             // Draw and add that row
@@ -328,7 +360,9 @@ public abstract class MemoryBoard extends Board {
                     FLocation flocationHere = topLeft.getRelative(dx, dz);
                     Faction factionHere = getFactionAt(flocationHere);
                     Relation relation = fplayer.getRelationTo(factionHere);
-                    if (factionHere.isWilderness()) {
+                    if (flocationHere.getX() < cxMin || flocationHere.getX() > cxMax || flocationHere.getZ() < czMin || flocationHere.getZ() > czMax) {
+                        row.then("-").color(ChatColor.BLACK);
+                    } else if (factionHere.isWilderness()) {
                         row.then("-").color(FactionsPlugin.getInstance().conf().colors().factions().getWilderness());
                     } else if (factionHere.isSafeZone()) {
                         row.then("+").color(FactionsPlugin.getInstance().conf().colors().factions().getSafezone());

@@ -8,13 +8,16 @@ import com.massivecraft.factions.config.file.MainConfig;
 import com.massivecraft.factions.perms.Relation;
 import com.massivecraft.factions.perms.Role;
 import com.massivecraft.factions.struct.ChatMode;
+import org.apache.logging.log4j.message.StringFormattedMessage;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
+import java.util.Locale;
 import java.util.UnknownFormatConversionException;
 import java.util.logging.Level;
 
@@ -24,6 +27,56 @@ public class FactionsChatListener implements Listener {
 
     public FactionsChatListener(FactionsPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    //Handles the /ff command.
+    @EventHandler(priority = EventPriority.LOW)
+    public void onPlayerCommand(PlayerCommandPreprocessEvent event){
+        if(!plugin.worldUtil().isEnabled(event.getPlayer().getWorld()))
+            return;
+
+        //Split string.
+        String[] arguments = event.getMessage().split(" +");
+
+        //Not a command
+        if(arguments.length < 1)
+            return;
+
+        String command = arguments[0].toLowerCase(Locale.ROOT);
+
+        //Not executing /ff?
+        if(!"/ff".equals(command))
+            return;
+
+        event.setCancelled(true);
+
+        //Get fplayer
+        FPlayer me = FPlayers.getInstance().getByPlayer(event.getPlayer());
+
+        if(arguments.length < 2){
+            //Inform user that they did not include message.
+            me.sendMessage(ChatColor.RED + "Please provide a message to send!");
+            return;
+        }
+
+        MainConfig.Factions.Chat chatConf = FactionsPlugin.getInstance().conf().factions().chat();
+        String message = event.getMessage().substring(4).trim();
+        Faction faction = me.getFaction();
+
+        //Translate message
+        message = String.format(chatConf.getFactionChatFormat(), me.describeTo(faction), message);
+
+        //Send message
+        faction.sendMessage(message);
+
+        FactionsPlugin.getInstance().log(Level.INFO, ChatColor.stripColor("FactionChat " + faction.getTag() + ": " + message));
+
+        //Send to any players who are spying chat
+        for (FPlayer fplayer : FPlayers.getInstance().getOnlinePlayers()) {
+            if (fplayer.isSpyingChat() && fplayer.getFaction() != faction && me != fplayer) {
+                fplayer.sendMessage("[FCspy] " + faction.getTag() + ": " + message);
+            }
+        }
     }
 
     // this is for handling slashless command usage and faction/alliance chat, set at lowest priority so Factions gets to them first

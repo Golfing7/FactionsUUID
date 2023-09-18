@@ -49,42 +49,38 @@ public class CmdTNTFill extends FCommand {
             return;
         }
 
-        if (amount > context.faction.getTNTBank()) {
-            context.msg(TL.COMMAND_TNT_FILL_FAIL_NOTENOUGH, amount);
-            return;
-        }
-
         if (radius > FactionsPlugin.getInstance().conf().commands().tnt().getMaxRadius()) {
             context.msg(TL.COMMAND_TNT_FILL_FAIL_MAXRADIUS, radius, FactionsPlugin.getInstance().conf().commands().tnt().getMaxRadius());
             return;
         }
 
         List<Dispenser> list = getDispensers(context.player.getLocation(), radius, context.faction.getId());
-        Collections.reverse(list);
 
-        int remaining = amount;
-        int dispenserCount = 0;
-        boolean firstRound = true;
-
-        while (remaining > 0 && !list.isEmpty()) {
-            int per = Math.max(1, remaining / list.size());
-            Iterator<Dispenser> iterator = list.iterator();
-            while (iterator.hasNext() && remaining >= per) {
-                int left = getCount(iterator.next().getInventory().addItem(getStacks(per)).values());
-                remaining -= per - left;
-                if (firstRound && ((per - left) > 0)) {
-                    dispenserCount++;
-                }
-                if (left > 0) {
-                    iterator.remove();
-                }
-            }
-            firstRound = false;
+        if (amount * list.size() > context.faction.getTNTBank()) {
+            context.msg(TL.COMMAND_TNT_FILL_FAIL_NEEDMORE, amount * list.size(), context.faction.getTNTBank() / list.size());
+            return;
         }
 
-        context.faction.setTNTBank(context.faction.getTNTBank() - amount + remaining);
+        int totalCount = list.size();
 
-        context.msg(TL.COMMAND_TNT_FILL_MESSAGE, amount - remaining, dispenserCount, context.faction.getTNTBank());
+        int remaining = amount * totalCount;
+        int dispenserCount = 0;
+
+        Iterator<Dispenser> iterator = list.iterator();
+        while (iterator.hasNext() && remaining >= amount) {
+            int left = getCount(iterator.next().getInventory().addItem(getStacks(amount)).values());
+            remaining -= amount - left;
+            if (((amount - left) > 0)) {
+                dispenserCount++;
+            }
+            if (left > 0) {
+                iterator.remove();
+            }
+        }
+
+        context.faction.setTNTBank(context.faction.getTNTBank() - (amount * totalCount) + remaining);
+
+        context.msg(TL.COMMAND_TNT_FILL_MESSAGE, (amount * totalCount) - remaining, dispenserCount, context.faction.getTNTBank());
     }
 
     static ItemStack[] getStacks(int count) {
@@ -101,7 +97,7 @@ public class CmdTNTFill extends FCommand {
     }
 
     static List<Dispenser> getDispensers(Location location, int radius, String id) {
-        List<Pair<Dispenser, Double>> list = new ArrayList<>();
+        List<Dispenser> list = new ArrayList<>();
         for (int x = location.getBlockX() - radius; x <= location.getBlockX() + radius; x++) {
             for (int y = location.getBlockY() - radius; y <= location.getBlockY() + radius; y++) {
                 for (int z = location.getBlockZ() - radius; z <= location.getBlockZ() + radius; z++) {
@@ -110,13 +106,12 @@ public class CmdTNTFill extends FCommand {
                         continue;
                     }
                     if (block.getType() == Material.DISPENSER) {
-                        list.add(Pair.of((Dispenser) block.getState(), Math.sqrt(((location.getBlockX() - x) ^ 2) + ((location.getBlockY() - y) ^ 2) + ((location.getBlockZ() - z) ^ 2))));
+                        list.add((Dispenser) block.getState());
                     }
                 }
             }
         }
-        list.sort(Comparator.comparing(Pair::getRight));
-        return list.stream().map(Pair::getLeft).collect(Collectors.toCollection(ArrayList::new));
+        return list;
     }
 
     static int getCount(Collection<? extends ItemStack> items) {

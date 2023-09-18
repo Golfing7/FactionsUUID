@@ -52,10 +52,11 @@ public class CmdTNTSiphon extends FCommand {
         List<Dispenser> list = CmdTNTFill.getDispensers(context.player.getLocation(), radius, context.faction.getId());
 
         int canTake;
-        if (FactionsPlugin.getInstance().conf().commands().tnt().getMaxStorage() < 0) {
+        int maxLevel = context.faction.getMaxTNT();
+        if (maxLevel < 0) {
             canTake = Integer.MAX_VALUE;
         } else {
-            canTake = FactionsPlugin.getInstance().conf().commands().tnt().getMaxStorage();
+            canTake = maxLevel;
         }
 
         canTake -= context.faction.getTNTBank();

@@ -11,13 +11,14 @@ public class CmdTNTInfo extends FCommand {
         super();
         this.aliases.add("info");
         this.aliases.add("status");
+        this.aliases.add("b");
 
         this.requirements = new CommandRequirements.Builder(Permission.TNT_INFO).memberOnly().build();
     }
 
     @Override
     public void perform(CommandContext context) {
-        context.msg(TL.COMMAND_TNT_INFO_MESSAGE, context.faction.getTNTBank());
+        context.msg(TL.COMMAND_TNT_INFO_MESSAGE, context.faction.getTNTBank(), context.faction.getMaxTNT());
     }
 
     @Override

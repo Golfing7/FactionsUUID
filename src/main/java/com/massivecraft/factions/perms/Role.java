@@ -13,7 +13,8 @@ public enum Role implements Permissible {
     COLEADER(3, TL.ROLE_COLEADER),
     MODERATOR(2, TL.ROLE_MODERATOR),
     NORMAL(1, TL.ROLE_NORMAL),
-    RECRUIT(0, TL.ROLE_RECRUIT);
+    RECRUIT(0, TL.ROLE_RECRUIT),
+    ALT(-1, TL.ROLE_ALT);
 
     public final int value;
     public final String nicename;
@@ -41,6 +42,8 @@ public enum Role implements Permissible {
 
     public static Role getByValue(int value) {
         switch (value) {
+            case -1:
+                return ALT;
             case 0:
                 return RECRUIT;
             case 1:
@@ -72,6 +75,8 @@ public enum Role implements Permissible {
             case "recruit":
             case "rec":
                 return RECRUIT;
+            case "alt":
+                return ALT;
         }
 
         return null;
@@ -105,6 +110,10 @@ public enum Role implements Permissible {
 
         if (this == Role.RECRUIT) {
             return FactionsPlugin.getInstance().conf().factions().prefixes().getRecruit();
+        }
+
+        if(this == Role.ALT){
+            return FactionsPlugin.getInstance().conf().factions().prefixes().getAlt();
         }
 
         return "";

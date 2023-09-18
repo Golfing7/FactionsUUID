@@ -44,12 +44,9 @@ public class EssentialsListener implements Listener {
         // Not a great way to do this on essential's side.
         for (String homeName : user.getHomes()) {
 
-            Location loc;
-            try {
-                loc = user.getHome(homeName);
-            } catch (InvalidWorldException e) {
-                // This can throw an exception for some reason.
-                FactionsPlugin.getInstance().getLogger().warning("Tried to check on home \"" + homeName + "\" for user \"" + event.getfPlayer().getName() + "\" but Essentials said world \"" + e.getWorld() + "\" does not exist. Skipping it.");
+            Location loc = user.getHome(homeName);
+            if(loc == null){
+                FactionsPlugin.getInstance().getLogger().warning("Tried to check on home \"" + homeName + "\" for user \"" + event.getfPlayer().getName() + "\" but Essentials said world does not exist. Skipping it.");
                 continue;
             }
             FLocation floc = new FLocation(loc);

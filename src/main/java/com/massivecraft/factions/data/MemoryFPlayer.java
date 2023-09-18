@@ -12,9 +12,9 @@ import com.massivecraft.factions.event.FactionAutoDisbandEvent;
 import com.massivecraft.factions.event.LandClaimEvent;
 import com.massivecraft.factions.iface.EconomyParticipator;
 import com.massivecraft.factions.iface.RelationParticipator;
+import com.massivecraft.factions.integration.CombatTagPlusIntegration;
 import com.massivecraft.factions.integration.Econ;
 import com.massivecraft.factions.integration.Essentials;
-import com.massivecraft.factions.integration.LWC;
 import com.massivecraft.factions.landraidcontrol.DTRControl;
 import com.massivecraft.factions.landraidcontrol.PowerControl;
 import com.massivecraft.factions.perms.PermissibleAction;
@@ -25,25 +25,17 @@ import com.massivecraft.factions.scoreboards.sidebar.FInfoSidebar;
 import com.massivecraft.factions.struct.ChatMode;
 import com.massivecraft.factions.struct.Permission;
 import com.massivecraft.factions.tag.Tag;
-import com.massivecraft.factions.util.RelationUtil;
-import com.massivecraft.factions.util.TL;
-import com.massivecraft.factions.util.TitleAPI;
-import com.massivecraft.factions.util.WarmUpUtil;
+import com.massivecraft.factions.util.*;
 import mkremins.fanciful.FancyMessage;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.Statistic;
+import org.bukkit.*;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -60,6 +52,7 @@ import java.util.UUID;
 public abstract class MemoryFPlayer implements FPlayer {
 
     protected String factionId;
+    protected String factionRosterId;
     protected Role role;
     protected String title;
     protected double power;
@@ -79,10 +72,10 @@ public abstract class MemoryFPlayer implements FPlayer {
     protected int kills, deaths;
     protected boolean willAutoLeave = true;
     protected int mapHeight = 8; // default to old value
-    protected boolean isFlying = false;
     protected boolean isAutoFlying = false;
     protected boolean flyTrailsState = false;
     protected String flyTrailsEffect = null;
+    protected boolean inspecting = false;
 
     protected boolean seeingChunk = false;
 
@@ -95,6 +88,24 @@ public abstract class MemoryFPlayer implements FPlayer {
     protected transient long lastFrostwalkerMessage;
     protected transient boolean shouldTakeFallDamage = true;
     protected transient OfflinePlayer offlinePlayer;
+    protected transient List<String[]> allCurrentInspectData;
+    protected transient Location currentInspectLocation;
+
+    public Location getCurrentInspectLocation() {
+        return currentInspectLocation;
+    }
+
+    public void setCurrentInspectLocation(Location currentInspectLocation) {
+        this.currentInspectLocation = currentInspectLocation;
+    }
+
+    public void setAllCurrentInspectData(List<String[]> allCurrentInspectData) {
+        this.allCurrentInspectData = allCurrentInspectData;
+    }
+
+    public List<String[]> getAllCurrentInspectData() {
+        return allCurrentInspectData;
+    }
 
     public void login() {
         this.kills = getPlayer().getStatistic(Statistic.PLAYER_KILLS);
@@ -117,8 +128,16 @@ public abstract class MemoryFPlayer implements FPlayer {
         return this.factionId;
     }
 
+    public String getRosterFactionId() {
+        return this.factionRosterId;
+    }
+
     public boolean hasFaction() {
         return !factionId.equals("0");
+    }
+
+    public boolean isOnRoster() {
+        return factionRosterId != null && !factionRosterId.equals("0");
     }
 
     public void setFaction(Faction faction) {
@@ -148,6 +167,16 @@ public abstract class MemoryFPlayer implements FPlayer {
     }
 
     public void setRole(Role role) {
+        Faction faction = this.getFaction();
+
+        if(faction != null){
+            if(role == Role.ADMIN || this.role == Role.ADMIN){
+                this.role = role;
+
+                ((MemoryFaction) faction).recalcFPlayerAdmin();
+                return;
+            }
+        }
         this.role = role;
     }
 
@@ -211,6 +240,16 @@ public abstract class MemoryFPlayer implements FPlayer {
             this.autoClaimFor = null;
             this.autoSafeZoneEnabled = false;
         }
+    }
+
+    @Override
+    public boolean isInspecting() {
+        return inspecting;
+    }
+
+    @Override
+    public void setInspecting(boolean inspecting) {
+        this.inspecting = inspecting;
     }
 
     public boolean isAdminBypassing() {
@@ -300,16 +339,21 @@ public abstract class MemoryFPlayer implements FPlayer {
 
         if (!FactionsPlugin.getInstance().conf().factions().other().getNewPlayerStartingFactionID().equals("0") && Factions.getInstance().isValidFactionId(FactionsPlugin.getInstance().conf().factions().other().getNewPlayerStartingFactionID())) {
             this.factionId = FactionsPlugin.getInstance().conf().factions().other().getNewPlayerStartingFactionID();
+
+            this.factionRosterId = factionId;
         }
     }
 
     public MemoryFPlayer(MemoryFPlayer other) {
         this.factionId = other.factionId;
+        this.factionRosterId = other.factionRosterId;
         this.id = other.id;
+        this.stealth = other.stealth;
         this.power = other.power;
         this.lastLoginTime = other.lastLoginTime;
         this.mapAutoUpdating = other.mapAutoUpdating;
         this.autoClaimFor = other.autoClaimFor;
+        this.inspecting = other.inspecting;
         this.autoSafeZoneEnabled = other.autoSafeZoneEnabled;
         this.autoWarZoneEnabled = other.autoWarZoneEnabled;
         this.loginPvpDisabled = other.loginPvpDisabled;
@@ -335,11 +379,83 @@ public abstract class MemoryFPlayer implements FPlayer {
             }
         }
 
+        if(factionRosterId != null && Factions.getInstance().isValidFactionId(this.getRosterFactionId())){
+            Faction currentFaction = Factions.getInstance().getFactionById(factionRosterId);
+
+            if (currentFaction.isNormal()) {
+                currentFaction.clearClaimOwnership(this);
+            }
+        }
+
         this.factionId = "0"; // The default neutral faction
+        this.factionRosterId = "0";
         this.chatMode = ChatMode.PUBLIC;
         this.role = Role.NORMAL;
         this.title = "";
         this.autoClaimFor = null;
+    }
+
+    public boolean attemptRotateIn(){
+        if(!isOnRoster())return false;
+
+        Faction faction = Factions.getInstance().getFactionById(factionRosterId);
+
+        if(faction == null)return false;
+
+        Set<FPlayer> fplayersOffline = faction.getFPlayersWhereOnline(false);
+
+        fplayersOffline.remove(this);
+
+        fplayersOffline = fplayersOffline.stream().filter(z -> z.getRole() != Role.ADMIN).collect(Collectors.toSet());
+
+        if(fplayersOffline.size() == 0){
+            this.msg(TL.COMMAND_ROSTER_ROTATE_FULL);
+            return false;
+        }
+
+        boolean rotated = false;
+        for(FPlayer fPlayer : fplayersOffline){
+            if(((MemoryFPlayer) fPlayer).rotateOut()){
+                rotated = true;
+                break;
+            }
+        }
+
+        if(!rotated){
+            this.msg(TL.COMMAND_ROSTER_ROTATE_FULL);
+            return false;
+        }
+
+        faction.addFPlayer(this);
+
+        this.factionId = factionRosterId;
+
+        for(FPlayer fPlayer : faction.getFPlayersWhereOnline(true)){
+            fPlayer.msg(TL.COMMAND_ROSTER_ROTATE_SUCCESS, this.describeTo(fPlayer), faction.describeTo(fPlayer));
+        }
+
+        this.autoClaimFor = null;
+        return true;
+    }
+
+    public boolean rotateOut(){
+        if(!isOnRoster())return false;
+
+        Faction faction = getFaction();
+        for(FPlayer fPlayer : faction.getFPlayersWhereOnline(true)){
+            fPlayer.msg(TL.COMMAND_ROSTER_ROTATE_SUCCESS, this.describeTo(fPlayer), faction.describeTo(fPlayer));
+        }
+
+        faction.removeFPlayer(this);
+
+        this.factionId = "0";
+
+        this.chatMode = ChatMode.PUBLIC;
+
+        this.autoClaimFor = null;
+
+        this.setFlying(false, false);
+        return true;
     }
 
     public void resetFactionData() {
@@ -509,6 +625,10 @@ public abstract class MemoryFPlayer implements FPlayer {
 
     public Relation getRelationToLocation() {
         return Board.getInstance().getFactionAt(new FLocation(this)).getRelationTo(this);
+    }
+
+    public Relation getRelationToLocation(FLocation fLocation){
+        return RelationUtil.getRelationTo(this, Board.getInstance().getFactionAt(fLocation));
     }
 
     @Override
@@ -766,14 +886,23 @@ public abstract class MemoryFPlayer implements FPlayer {
         return canClaimForFactionAtLocation(forFaction, new FLocation(location), notifyFailure);
     }
 
-    public boolean canClaimForFactionAtLocation(Faction forFaction, FLocation flocation, boolean notifyFailure) {
+    public boolean canClaimForFactionAtLocation(Faction forFaction, FLocation location, boolean notifyFailure) {
+        return canClaimForFactionAtLocation(forFaction, location, notifyFailure, null);
+    }
+
+    public boolean canClaimForFactionAtLocation(Faction forFaction, FLocation location, boolean notifyFailure, SpiralTask spiralTask) {
+        return canClaimForFactionAtLocation(forFaction, Board.getInstance().getFactionAt(location), location, notifyFailure, spiralTask);
+    }
+
+    public boolean canClaimForFactionAtLocation(Faction forFaction, Faction currentFaction, FLocation flocation, boolean notifyFailure, SpiralTask spiralTask) {
         FactionsPlugin plugin = FactionsPlugin.getInstance();
         String denyReason = null;
         Faction myFaction = getFaction();
-        Faction currentFaction = Board.getInstance().getFactionAt(flocation);
         int ownedLand = forFaction.getLandRounded();
         int factionBuffer = plugin.conf().factions().claims().getBufferZone();
         int worldBuffer = plugin.conf().worldBorder().getBuffer();
+
+        boolean doCancel = false;
 
         if (plugin.conf().worldGuard().isChecking() && plugin.getWorldguard() != null && plugin.getWorldguard().checkForRegionsInChunk(flocation.getChunk())) {
             // Checks for WorldGuard regions in the chunk attempting to be claimed
@@ -795,7 +924,7 @@ public abstract class MemoryFPlayer implements FPlayer {
             denyReason = plugin.txt().parse(TL.CLAIM_CANTCLAIM.toString(), forFaction.describeTo(this));
         } else if (forFaction == currentFaction) {
             // Already owned by this faction, nitwit
-            denyReason = plugin.txt().parse(TL.CLAIM_ALREADYOWN.toString(), forFaction.describeTo(this, true));
+            if(spiralTask == null)denyReason = plugin.txt().parse(TL.CLAIM_ALREADYOWN.toString(), forFaction.describeTo(this, true));
         } else if (forFaction.getFPlayers().size() < plugin.conf().factions().claims().getRequireMinFactionMembers()) {
             // Need more members in order to claim land
             denyReason = plugin.txt().parse(TL.CLAIM_MEMBERS.toString(), plugin.conf().factions().claims().getRequireMinFactionMembers());
@@ -807,13 +936,16 @@ public abstract class MemoryFPlayer implements FPlayer {
             denyReason = plugin.txt().parse(TL.CLAIM_WARZONE.toString());
         } else if (plugin.getLandRaidControl() instanceof PowerControl && ownedLand >= forFaction.getPowerRounded()) {
             // Already own at least as much land as power
+            doCancel = true;
             denyReason = plugin.txt().parse(TL.CLAIM_POWER.toString());
         } else if (plugin.getLandRaidControl() instanceof DTRControl && ownedLand >= plugin.getLandRaidControl().getLandLimit(forFaction)) {
             // Already own at least as much land as land limit (DTR)
+            doCancel = true;
             denyReason = plugin.txt().parse(TL.CLAIM_DTR_LAND.toString());
         } else if (plugin.conf().factions().claims().getLandsMax() != 0 && ownedLand >= plugin.conf().factions().claims().getLandsMax() && forFaction.isNormal()) {
             // Land limit reached
             denyReason = plugin.txt().parse(TL.CLAIM_LIMIT.toString());
+            doCancel = true;
         } else if (currentFaction.getRelationTo(forFaction) == Relation.ALLY) {
             // // Can't claim ally
             denyReason = plugin.txt().parse(TL.CLAIM_ALLY.toString());
@@ -834,6 +966,8 @@ public abstract class MemoryFPlayer implements FPlayer {
             } else {
                 denyReason = plugin.txt().parse(TL.CLAIM_OUTSIDEWORLDBORDER.toString());
             }
+
+            doCancel = true;
         } else if (currentFaction.isNormal()) {
             if (myFaction.isPeaceful()) {
                 // Cannot claim as peaceful
@@ -854,6 +988,11 @@ public abstract class MemoryFPlayer implements FPlayer {
         }
         // TODO: Add more else if statements.
 
+        if(doCancel && spiralTask != null){
+            msg(denyReason);
+            spiralTask.stopTooSoon();
+            return false;
+        }
         if (notifyFailure && denyReason != null) {
             msg(denyReason);
         }
@@ -864,26 +1003,47 @@ public abstract class MemoryFPlayer implements FPlayer {
         return attemptClaim(forFaction, new FLocation(location), notifyFailure);
     }
 
-    public boolean attemptClaim(Faction forFaction, FLocation flocation, boolean notifyFailure) {
+    public boolean attemptClaim(Faction forFaction, FLocation location, boolean notifyFailure) {
+        return attemptClaim(forFaction, location, notifyFailure, null);
+    }
+
+    public boolean attemptClaim(Faction forFaction, FLocation flocation, boolean notifyFailure, SpiralTask spiralTask) {
         // notifyFailure is false if called by auto-claim; no need to notify on every failure for it
         // return value is false on failure, true on success
+
+        WorldBorder worldBorder = flocation.getWorld().getWorldBorder();
+
+        double radius = worldBorder.getSize() / 2;
+
+        double cxMin = Math.floor((worldBorder.getCenter().getX() - radius - 1) / 16.0D);
+        double cxMax = Math.floor((worldBorder.getCenter().getX() + radius) / 16.0D);
+
+        double czMin = Math.floor((worldBorder.getCenter().getZ() - radius - 1) / 16.0D);
+        double czMax = Math.floor((worldBorder.getCenter().getZ() + radius) / 16.0D);
+
+        if(flocation.getX() < cxMin || flocation.getX() > cxMax || flocation.getZ() < czMin || flocation.getZ() > czMax){
+            this.msg(TL.COMMAND_CLAIM_OUTSIDEBORDER);
+            return false;
+        }
 
         Faction currentFaction = Board.getInstance().getFactionAt(flocation);
 
         int ownedLand = forFaction.getLandRounded();
 
-        if (!this.canClaimForFactionAtLocation(forFaction, flocation, notifyFailure)) {
+        if (!this.canClaimForFactionAtLocation(forFaction, currentFaction, flocation, notifyFailure, spiralTask)) {
             return false;
+        }else if(currentFaction == forFaction){
+            return true;
         }
 
         // if economy is enabled and they're not on the bypass list, make sure they can pay
         boolean mustPay = Econ.shouldBeUsed() && !this.isAdminBypassing() && !forFaction.isSafeZone() && !forFaction.isWarZone();
         double cost = 0.0;
         EconomyParticipator payee = null;
-        if (mustPay) {
+        if (mustPay && FactionsPlugin.getInstance().conf().economy().getClaimUnconnectedFee() != 0.0) {
             cost = Econ.calculateClaimCost(ownedLand, currentFaction.isNormal());
 
-            if (FactionsPlugin.getInstance().conf().economy().getClaimUnconnectedFee() != 0.0 && forFaction.getLandRoundedInWorld(flocation.getWorldName()) > 0 && !Board.getInstance().isConnectedLocation(flocation, forFaction)) {
+            if (forFaction.getLandRoundedInWorld(flocation.getWorldName()) > 0 && !Board.getInstance().isConnectedLocation(flocation, forFaction)) {
                 cost += FactionsPlugin.getInstance().conf().economy().getClaimUnconnectedFee();
             }
 
@@ -896,6 +1056,8 @@ public abstract class MemoryFPlayer implements FPlayer {
             if (!Econ.hasAtLeast(payee, cost, TL.CLAIM_TOCLAIM.toString())) {
                 return false;
             }
+        }else{
+            mustPay = false;
         }
 
         LandClaimEvent claimEvent = new LandClaimEvent(flocation, forFaction, this);
@@ -915,16 +1077,14 @@ public abstract class MemoryFPlayer implements FPlayer {
             Econ.modifyMoney(payee, FactionsPlugin.getInstance().conf().economy().getOverclaimRewardMultiplier(), TL.CLAIM_TOOVERCLAIM.toString(), TL.CLAIM_FOROVERCLAIM.toString());
         }
 
-        if (LWC.getEnabled() && forFaction.isNormal() && FactionsPlugin.getInstance().conf().lwc().isResetLocksOnCapture()) {
-            LWC.clearOtherLocks(flocation, this.getFaction());
-        }
-
         // announce success
-        Set<FPlayer> informTheseFPlayers = new HashSet<>();
-        informTheseFPlayers.add(this);
-        informTheseFPlayers.addAll(forFaction.getFPlayersWhereOnline(true));
-        for (FPlayer fp : informTheseFPlayers) {
-            fp.msg(TL.CLAIM_CLAIMED, this.describeTo(fp, true), forFaction.describeTo(fp), currentFaction.describeTo(fp));
+        if(spiralTask == null){
+            Set<FPlayer> informTheseFPlayers = new HashSet<>();
+            informTheseFPlayers.add(this);
+            informTheseFPlayers.addAll(forFaction.getFPlayersWhereOnline(true));
+            for (FPlayer fp : informTheseFPlayers) {
+                fp.msg(TL.CLAIM_CLAIMED, this.describeTo(fp, true), forFaction.describeTo(fp), currentFaction.describeTo(fp));
+            }
         }
 
         Board.getInstance().setFactionAt(forFaction, flocation);
@@ -969,7 +1129,9 @@ public abstract class MemoryFPlayer implements FPlayer {
     }
 
     public boolean isFlying() {
-        return isFlying;
+        Player player = getPlayer();
+        if(player == null || !player.isOnline())return false;
+        return player.getAllowFlight();
     }
 
     public void setFlying(boolean fly) {
@@ -977,6 +1139,11 @@ public abstract class MemoryFPlayer implements FPlayer {
     }
 
     public void setFlying(boolean fly, boolean damage) {
+        if(fly && !this.isFlying() && FactionsPlugin.getInstance().isSOTW() && !Permission.SOTW.has(this.getPlayer())){
+            this.msg(TL.PLAYER_SOTW_NOFLY);
+            return;
+        }
+
         Player player = getPlayer();
         if (player != null) {
             player.setAllowFlight(fly);
@@ -984,7 +1151,7 @@ public abstract class MemoryFPlayer implements FPlayer {
         }
 
         if (!damage) {
-            msg(TL.COMMAND_FLY_CHANGE, fly ? "enabled" : "disabled");
+            msg(TL.COMMAND_FLY_CHANGE, fly ? TL.GENERIC_ENABLED : TL.GENERIC_DISABLED);
         } else {
             msg(TL.COMMAND_FLY_DAMAGE);
         }
@@ -998,24 +1165,28 @@ public abstract class MemoryFPlayer implements FPlayer {
             // Short task so we're just doing it in method. Not clean but eh.
             if (cooldown > 0) {
                 setTakeFallDamage(false);
-                new BukkitRunnable() {
+
+                if(flyTask != null)flyTask.cancel();
+                flyTask = new BukkitRunnable() {
                     @Override
                     public void run() {
                         setTakeFallDamage(true);
+
+                        flyTask = null;
                     }
                 }.runTaskLater(FactionsPlugin.getInstance(), 20L * cooldown);
             }
         }
-
-        isFlying = fly;
     }
+
+    private transient BukkitTask flyTask;
 
     public boolean isAutoFlying() {
         return isAutoFlying;
     }
 
     public void setAutoFlying(boolean autoFly) {
-        msg(TL.COMMAND_FLY_AUTO, autoFly ? "enabled" : "disabled");
+        msg(TL.COMMAND_FLY_AUTO, autoFly ? TL.GENERIC_ENABLED : TL.GENERIC_DISABLED);
         this.isAutoFlying = autoFly;
     }
 
@@ -1024,10 +1195,21 @@ public abstract class MemoryFPlayer implements FPlayer {
     }
 
     public boolean canFlyAtLocation(FLocation location) {
-        return this.canFlyInFactionTerritory(Board.getInstance().getFactionAt(location));
+        return (getPlayer() != null && getPlayer().getGameMode() == GameMode.SPECTATOR) ||
+                (this.canFlyInFactionTerritory(Board.getInstance().getFactionAt(location)) && !CombatTagPlusIntegration.playerIsInCombat(UUID.fromString(this.id)));
     }
 
     public boolean canFlyInFactionTerritory(Faction faction) {
+        if(this.getPlayer() != null && Permission.FLY_ANY.has(this.getPlayer()))
+            return true;
+
+        if (faction.getRelationTo(this).isAtLeast(Relation.ENEMY) && Permission.FLY_ENEMY.has(this.getPlayer()))
+            return true;
+
+        //Check neutral permission.
+        if(faction.getRelationTo(this).isAtLeast(Relation.NEUTRAL) && Permission.FLY_NEUTRAL.has(this.getPlayer()))
+            return true;
+
         if (faction.isWilderness()) {
             return Permission.FLY_WILDERNESS.has(getPlayer());
         } else if (faction.isSafeZone()) {
@@ -1067,7 +1249,7 @@ public abstract class MemoryFPlayer implements FPlayer {
 
     public void setFlyTrailsState(boolean state) {
         flyTrailsState = state;
-        msg(TL.COMMAND_FLYTRAILS_CHANGE, state ? "enabled" : "disabled");
+        msg(TL.COMMAND_FLYTRAILS_CHANGE, state ? TL.GENERIC_ENABLED : TL.GENERIC_DISABLED);
     }
 
     public String getFlyTrailsEffect() {
@@ -1182,5 +1364,17 @@ public abstract class MemoryFPlayer implements FPlayer {
         }
         this.warmup = warmup;
         this.warmupTask = taskId;
+    }
+
+    private boolean stealth;
+
+    @Override
+    public boolean isStealth() {
+        return stealth;
+    }
+
+    @Override
+    public void setStealth(boolean stealth) {
+        this.stealth = stealth;
     }
 }

@@ -151,7 +151,7 @@ public abstract class AbstractListener implements Listener {
 
     private boolean explosionDisallowed(Entity boomer, FLocation location) {
         Faction faction = Board.getInstance().getFactionAt(location);
-        boolean online = faction.hasPlayersOnline();
+        boolean online = !FactionsPlugin.getInstance().getConfigManager().getMainConfig().onlineChecks().doOnlineChecks() || faction.hasPlayersOnline();
         if (faction.noExplosionsInTerritory() || (faction.isPeaceful() && FactionsPlugin.getInstance().conf().factions().specialCase().isPeacefulTerritoryDisableBoom())) {
             // faction is peaceful and has explosions set to disabled
             return true;
@@ -219,85 +219,89 @@ public abstract class AbstractListener implements Listener {
 
         PermissibleAction action = null;
 
-        switch (material) {
-            case LEVER:
-                action = PermissibleAction.LEVER;
-                break;
-            case STONE_BUTTON:
-            case BIRCH_BUTTON:
-            case ACACIA_BUTTON:
-            case DARK_OAK_BUTTON:
-            case JUNGLE_BUTTON:
-            case OAK_BUTTON:
-            case SPRUCE_BUTTON:
-                action = PermissibleAction.BUTTON;
-                break;
-            case DARK_OAK_DOOR:
-            case ACACIA_DOOR:
-            case BIRCH_DOOR:
-            case IRON_DOOR:
-            case JUNGLE_DOOR:
-            case SPRUCE_DOOR:
-            case ACACIA_TRAPDOOR:
-            case OAK_DOOR:
-            case BIRCH_TRAPDOOR:
-            case DARK_OAK_TRAPDOOR:
-            case IRON_TRAPDOOR:
-            case JUNGLE_TRAPDOOR:
-            case OAK_TRAPDOOR:
-            case SPRUCE_TRAPDOOR:
-                action = PermissibleAction.DOOR;
-                break;
-            case CHEST:
-            case ENDER_CHEST:
-            case TRAPPED_CHEST:
-            case BARREL:
-            case FURNACE:
-            case DROPPER:
-            case DISPENSER:
-            case HOPPER:
-            case BLAST_FURNACE:
-            case CAULDRON:
-            case CAMPFIRE:
-            case BREWING_STAND:
-            case CARTOGRAPHY_TABLE:
-            case GRINDSTONE:
-            case SMOKER:
-            case STONECUTTER:
-            case LECTERN:
-            case ITEM_FRAME:
-            case JUKEBOX:
-            case ARMOR_STAND:
-            case REPEATER:
-            case ENCHANTING_TABLE:
-            case FARMLAND:
-            case BEACON:
-            case ANVIL:
-            case CHIPPED_ANVIL:
-            case DAMAGED_ANVIL:
-            case FLOWER_POT:
-            case BEE_NEST:
-                action = PermissibleAction.CONTAINER;
-                break;
-            default:
-                // Check for doors that might have diff material name in old version.
-                if (material.name().contains("DOOR") || material.name().contains("GATE")) {
-                    action = PermissibleAction.DOOR;
-                }
-                if (material.name().contains("BUTTON")) {
+        if(!material.toString().contains("DIODE")){
+            switch (material) {
+                case LEVER:
+                    action = PermissibleAction.LEVER;
+                    break;
+                case STONE_BUTTON:
+                case BIRCH_BUTTON:
+                case ACACIA_BUTTON:
+                case DARK_OAK_BUTTON:
+                case JUNGLE_BUTTON:
+                case OAK_BUTTON:
+                case SPRUCE_BUTTON:
                     action = PermissibleAction.BUTTON;
-                }
-                // Lazier than checking all the combinations
-                if (material.name().contains("SHULKER") || material.name().contains("ANVIL") || material.name().startsWith("POTTED")) {
+                    break;
+                case DARK_OAK_DOOR:
+                case ACACIA_DOOR:
+                case BIRCH_DOOR:
+                case IRON_DOOR:
+                case JUNGLE_DOOR:
+                case SPRUCE_DOOR:
+                case ACACIA_TRAPDOOR:
+                case OAK_DOOR:
+                case BIRCH_TRAPDOOR:
+                case DARK_OAK_TRAPDOOR:
+                case IRON_TRAPDOOR:
+                case JUNGLE_TRAPDOOR:
+                case OAK_TRAPDOOR:
+                case SPRUCE_TRAPDOOR:
+                    action = PermissibleAction.DOOR;
+                    break;
+                case CHEST:
+                case ENDER_CHEST:
+                case TRAPPED_CHEST:
+                case BARREL:
+                case FURNACE:
+                case DROPPER:
+                case DISPENSER:
+                case HOPPER:
+                case BLAST_FURNACE:
+                case CAULDRON:
+                case CAMPFIRE:
+                case BREWING_STAND:
+                case CARTOGRAPHY_TABLE:
+                case GRINDSTONE:
+                case SMOKER:
+                case STONECUTTER:
+                case LECTERN:
+                case ITEM_FRAME:
+                case JUKEBOX:
+                case ARMOR_STAND:
+                case REPEATER:
+                case ENCHANTING_TABLE:
+                case FARMLAND:
+                case BEACON:
+                case ANVIL:
+                case CHIPPED_ANVIL:
+                case DAMAGED_ANVIL:
+                case FLOWER_POT:
+                case BEE_NEST:
                     action = PermissibleAction.CONTAINER;
-                }
-                if (material.name().endsWith("_PLATE")) {
-                    action = PermissibleAction.PLATE;
-                }
-                if (material.name().contains("SIGN")) {
-                    action = PermissibleAction.ITEM;
-                }
-                break;
+                    break;
+                default:
+                    // Check for doors that might have diff material name in old version.
+                    if (material.name().contains("DOOR") || material.name().contains("GATE")) {
+                        action = PermissibleAction.DOOR;
+                    }
+                    if (material.name().contains("BUTTON")) {
+                        action = PermissibleAction.BUTTON;
+                    }
+                    // Lazier than checking all the combinations
+                    if (material.name().contains("SHULKER") || material.name().contains("ANVIL") || material.name().startsWith("POTTED")) {
+                        action = PermissibleAction.CONTAINER;
+                    }
+                    if (material.name().endsWith("_PLATE")) {
+                        action = PermissibleAction.PLATE;
+                    }
+                    if (material.name().contains("SIGN")) {
+                        action = PermissibleAction.ITEM;
+                    }
+                    break;
+            }
+        }else{
+            action = PermissibleAction.REPEATER;
         }
 
         if (action == null) {

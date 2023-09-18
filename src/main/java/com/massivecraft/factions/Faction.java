@@ -7,10 +7,14 @@ import com.massivecraft.factions.perms.Relation;
 import com.massivecraft.factions.perms.Role;
 import com.massivecraft.factions.struct.BanInfo;
 import com.massivecraft.factions.util.LazyLocation;
+import com.massivecraft.factions.util.StrikeInfo;
+import com.massivecraft.factions.util.UpgradeType;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +50,16 @@ public interface Faction extends EconomyParticipator {
 
     void removeAnnouncements(FPlayer fPlayer);
 
+    void setPayPal(String payPal);
+
+    String getPayPal();
+
+    String getAltJoinString();
+
+    String setAltOpen();
+
+    void setAltClosed();
+
     Set<String> getInvites();
 
     String getId();
@@ -65,6 +79,12 @@ public interface Faction extends EconomyParticipator {
     Set<BanInfo> getBannedPlayers();
 
     boolean getOpen();
+
+    int getMaxTNT();
+
+    int getUpgrade(UpgradeType type);
+
+    Map<UpgradeType, Integer> getUpgrades();
 
     void setOpen(boolean isOpen);
 
@@ -95,6 +115,8 @@ public interface Faction extends EconomyParticipator {
     String getComparisonTag();
 
     String getDescription();
+
+    Inventory getChest();
 
     void setDescription(String value);
 
@@ -221,6 +243,12 @@ public interface Faction extends EconomyParticipator {
 
     boolean removeFPlayer(FPlayer fplayer);
 
+    List<StrikeInfo> getStrikes();
+
+    void addStrike(String reason, long time);
+
+    boolean takeStrike(int index);
+
     int getSize();
 
     Set<FPlayer> getFPlayers();
@@ -230,6 +258,8 @@ public interface Faction extends EconomyParticipator {
     Set<FPlayer> getFPlayersWhereOnline(boolean online, FPlayer viewer);
 
     FPlayer getFPlayerAdmin();
+
+    FPlayer getLeader();
 
     List<FPlayer> getFPlayersWhereRole(Role role);
 
@@ -252,6 +282,14 @@ public interface Faction extends EconomyParticipator {
     void sendMessage(String message);
 
     void sendMessage(List<String> messages);
+
+    Set<FLocation> getSpawnerChunks();
+
+    void setSpawnerChunk(FLocation location, boolean value);
+
+    boolean isSpawnerChunk(FLocation location);
+
+    void clearSpawnerChunks();
 
     // ----------------------------------------------//
     // Ownership of specific claims

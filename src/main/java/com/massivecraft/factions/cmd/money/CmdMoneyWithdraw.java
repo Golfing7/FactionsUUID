@@ -38,6 +38,8 @@ public class CmdMoneyWithdraw extends MoneyCommand {
             return;
         }
 
+        if(Permission.MONEY_WITHDRAW_ALL.has(context.player) && context.argAsString(0, "").equalsIgnoreCase("all"))amount = Math.max(Econ.getBalance(faction), 0.0D);
+
         boolean success = Econ.transferMoney(context.fPlayer, faction, context.fPlayer, amount);
 
         if (success && FactionsPlugin.getInstance().conf().logging().isMoneyTransactions()) {

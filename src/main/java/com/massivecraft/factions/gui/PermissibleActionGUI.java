@@ -105,6 +105,7 @@ public class PermissibleActionGUI extends GUI<PermissibleAction> implements GUI.
             if (this.permissible instanceof Relation && action.isFactionOnly()) {
                 continue;
             }
+            if(action == PermissibleAction.FROSTWALK || action == PermissibleAction.PAINBUILD)continue;
             map.put(i++, action);
         }
         return map;
@@ -123,7 +124,7 @@ public class PermissibleActionGUI extends GUI<PermissibleAction> implements GUI.
     @Override
     protected Map<Integer, SimpleItem> createDummyItems() {
         Map<Integer, SimpleItem> map = new HashMap<>();
-        map.put(this.back = ((PermissibleAction.values().length / 9) + 1) * 9, backItem);
+        map.put((this.back = ((PermissibleAction.values().length / 9) + 1) * 9 - 1), backItem);
         if (FactionsPlugin.getInstance().conf().factions().other().isSeparateOfflinePerms() && permissible instanceof Relation) {
             map.put(this.back + 4, PermissibleRelationGUI.offlineSwitch);
         }

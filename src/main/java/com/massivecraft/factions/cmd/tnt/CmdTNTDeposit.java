@@ -28,13 +28,17 @@ public class CmdTNTDeposit extends FCommand {
     @Override
     public void perform(CommandContext context) {
         Player player = context.player;
-        if (!context.faction.equals(Board.getInstance().getFactionAt(new FLocation(player.getLocation())))) {
+        if (!context.faction.equals(Board.getInstance().getFactionAt(new FLocation(player.getLocation()))) && !Permission.TNT_DEPOSIT_ENEMY.has(context.sender)) {
             context.msg(TL.COMMAND_TNT_TERRITORYONLY);
             return;
         }
         int amount = context.argAsInt(0, -1);
         if (amount <= 0) {
-            context.msg(TL.COMMAND_TNT_DEPOSIT_FAIL_POSITIVE, amount);
+            if(context.argAsString(0, "").equalsIgnoreCase("all")){
+                depositAll(context);
+            }else{
+                context.msg(TL.COMMAND_TNT_DEPOSIT_FAIL_POSITIVE, amount);
+            }
             return;
         }
 
@@ -43,12 +47,13 @@ public class CmdTNTDeposit extends FCommand {
             return;
         }
 
-        if (FactionsPlugin.getInstance().conf().commands().tnt().isAboveMaxStorage(context.faction.getTNTBank() + amount)) {
-            if (FactionsPlugin.getInstance().conf().commands().tnt().getMaxStorage() == context.faction.getTNTBank()) {
-                context.msg(TL.COMMAND_TNT_DEPOSIT_FAIL_FULL, FactionsPlugin.getInstance().conf().commands().tnt().getMaxStorage());
+        int max = context.faction.getMaxTNT();
+        if (context.faction.getTNTBank() + amount > max) {
+            if (max == context.faction.getTNTBank()) {
+                context.msg(TL.COMMAND_TNT_DEPOSIT_FAIL_FULL, max);
                 return;
             }
-            amount = FactionsPlugin.getInstance().conf().commands().tnt().getMaxStorage() - context.faction.getTNTBank();
+            amount = max - context.faction.getTNTBank();
         }
         int current = amount;
         Map<Integer, ? extends ItemStack> all = player.getInventory().all(Material.TNT);
@@ -66,6 +71,32 @@ public class CmdTNTDeposit extends FCommand {
             }
         }
         context.faction.setTNTBank(context.faction.getTNTBank() + amount);
+        context.msg(TL.COMMAND_TNT_DEPOSIT_SUCCESS, context.faction.getTNTBank());
+    }
+
+    private void depositAll(CommandContext context){
+        Player player = context.player;
+
+        if (!player.getInventory().containsAtLeast(new ItemStack(Material.TNT), 1)) {
+            context.msg(TL.COMMAND_TNT_DEPOSIT_FAIL_NONE);
+            return;
+        }
+
+        Map<Integer, ? extends ItemStack> all = player.getInventory().all(Material.TNT);
+        int totalAdded = 0;
+        for (Map.Entry<Integer, ? extends ItemStack> entry : all.entrySet()) {
+            int allowed = context.faction.getMaxTNT() - context.faction.getTNTBank();
+            if(allowed <= 0)break;
+            final int count = entry.getValue().getAmount();
+            int toRemove = Math.min(allowed, count);
+            totalAdded += toRemove;
+            if (toRemove == count) {
+                player.getInventory().setItem(entry.getKey(), null);
+            } else {
+                player.getInventory().getItem(entry.getKey()).setAmount(toRemove);
+            }
+        }
+        context.faction.setTNTBank(context.faction.getTNTBank() + totalAdded);
         context.msg(TL.COMMAND_TNT_DEPOSIT_SUCCESS, context.faction.getTNTBank());
     }
 

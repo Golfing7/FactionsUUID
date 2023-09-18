@@ -442,6 +442,7 @@ CLAIM:
   TOCLAIM: to claim this land
   FORCLAIM: for claiming this land
   CLAIMED: <h>%s<i> claimed land for <h>%s<i> from <h>%s<i>.
+  CLAIMEDAMOUNT: <h>%s<i> claimed &d%s <i>land for <h>%s<i>.
   CLAIMEDLOG: '%s claimed land at (%s) for the faction: %s'
 GENERIC:
   NOPERMISSION: <b>You don't have permission to %1$s.

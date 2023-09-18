@@ -7,6 +7,7 @@ import com.massivecraft.factions.integration.Econ;
 import com.massivecraft.factions.landraidcontrol.DTRControl;
 import com.massivecraft.factions.landraidcontrol.PowerControl;
 import com.massivecraft.factions.perms.Relation;
+import com.massivecraft.factions.perms.Role;
 import com.massivecraft.factions.util.TL;
 import org.apache.commons.lang.time.DurationFormatUtils;
 
@@ -92,6 +93,9 @@ public enum FactionTag implements Tag {
             return String.valueOf(fac.getFPlayersWhereOnline(true).size());
         }
     }),
+    ALT_COUNT("alts", (fac, fp) -> {
+        return String.valueOf(fac.getFPlayersWhereRole(Role.ALT).size());
+    }),
     OFFLINE_COUNT("offline", (fac, fp) -> {
         if (fp != null && fp.isOnline()) {
             return String.valueOf(fac.getFPlayers().size() - fac.getFPlayersWhereOnline(true, fp).size());
@@ -104,6 +108,7 @@ public enum FactionTag implements Tag {
     FACTION_KILLS("faction-kills", (fac) -> String.valueOf(fac.getKills())),
     FACTION_DEATHS("faction-deaths", (fac) -> String.valueOf(fac.getDeaths())),
     FACTION_BANCOUNT("faction-bancount", (fac) -> String.valueOf(fac.getBannedPlayers().size())),
+    STRIKES("strikes", (fac) -> fac.getStrikes().size() + ""),
     ;
 
     private final String tag;

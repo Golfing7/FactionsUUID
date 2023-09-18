@@ -82,6 +82,34 @@ public class RelationUtil {
         return fme.getRelationWish(fthat);
     }
 
+    public static Relation getRelationToFast(Faction me, Faction that, boolean ignorePeaceful) {
+        if (that == null) {
+            return Relation.NEUTRAL; // ERROR
+        }
+
+        if (me == null) {
+            return Relation.NEUTRAL; // ERROR
+        }
+
+        if (!that.isNormal() || !me.isNormal()) {
+            return Relation.NEUTRAL;
+        }
+
+        if (that.equals(me)) {
+            return Relation.MEMBER;
+        }
+
+        if (!ignorePeaceful && (me.isPeaceful() || that.isPeaceful())) {
+            return Relation.NEUTRAL;
+        }
+
+        if (me.getRelationWish(that).value >= that.getRelationWish(me).value) {
+            return that.getRelationWish(me);
+        }
+
+        return me.getRelationWish(that);
+    }
+
     public static Faction getFaction(RelationParticipator rp) {
         if (rp instanceof Faction) {
             return (Faction) rp;
@@ -97,20 +125,21 @@ public class RelationUtil {
 
     public static ChatColor getColorOfThatToMe(RelationParticipator that, RelationParticipator me) {
         Faction thatFaction = getFaction(that);
+        Faction faction = getFaction(me);
         if (thatFaction != null) {
-            if (thatFaction.isPeaceful() && thatFaction != getFaction(me)) {
+            if (thatFaction.isPeaceful() && thatFaction != faction) {
                 return FactionsPlugin.getInstance().conf().colors().relations().getPeaceful();
             }
 
-            if (thatFaction.isSafeZone() && thatFaction != getFaction(me)) {
+            if (thatFaction.isSafeZone() && thatFaction != faction) {
                 return FactionsPlugin.getInstance().conf().colors().factions().getSafezone();
             }
 
-            if (thatFaction.isWarZone() && thatFaction != getFaction(me)) {
+            if (thatFaction.isWarZone() && thatFaction != faction) {
                 return FactionsPlugin.getInstance().conf().colors().factions().getWarzone();
             }
         }
 
-        return getRelationTo(that, me).getColor();
+        return getRelationToFast(thatFaction, faction, false).getColor();
     }
 }

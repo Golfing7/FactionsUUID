@@ -43,6 +43,11 @@ public class CmdColeader extends FCommand {
             return;
         }
 
+        if(target.getRole() == Role.ALT){
+            context.msg(TL.COMMAND_PROMOTE_ISALT);
+            return;
+        }
+
         boolean permAny = Permission.COLEADER_ANY.has(context.sender, false);
         Faction targetFaction = target.getFaction();
 

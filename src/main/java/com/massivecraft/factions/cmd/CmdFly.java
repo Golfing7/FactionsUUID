@@ -24,8 +24,24 @@ public class CmdFly extends FCommand {
     @Override
     public void perform(CommandContext context) {
         if (context.args.size() == 0) {
-            toggleFlight(context, !context.fPlayer.isFlying(), true);
+            if(FactionsPlugin.getInstance().isSOTW() && !Permission.SOTW.has(context.sender)){
+                context.fPlayer.msg(TL.PLAYER_SOTW_NOFLY);
+                return;
+            }
+            if (Permission.FLY_AUTO.has(context.player, false)) {
+                boolean did = toggleFlight(context, !context.fPlayer.isAutoFlying(), true);
+
+                if(did){
+                    context.fPlayer.setAutoFlying(!context.fPlayer.isAutoFlying());
+                }
+            }else{
+                toggleFlight(context, !context.fPlayer.isFlying(), true);
+            }
         } else if (context.args.size() == 1) {
+            if(FactionsPlugin.getInstance().isSOTW() && !Permission.SOTW.has(context.sender)){
+                context.fPlayer.msg(TL.PLAYER_SOTW_NOFLY);
+                return;
+            }
             if (context.argAsString(0).equalsIgnoreCase("auto")) {
                 // Player Wants to AutoFly
                 if (Permission.FLY_AUTO.has(context.player, true)) {
@@ -38,22 +54,27 @@ public class CmdFly extends FCommand {
         }
     }
 
-    private void toggleFlight(final CommandContext context, final boolean toggle, boolean notify) {
+    private boolean toggleFlight(final CommandContext context, final boolean toggle, boolean notify) {
         // If false do nothing besides set
         if (!toggle) {
             context.fPlayer.setFlying(false);
-            return;
+            return true;
         }
         // Do checks if true
         if (!flyTest(context, notify)) {
-            return;
+            return false;
         }
 
         context.doWarmUp(WarmUpUtil.Warmup.FLIGHT, TL.WARMUPS_NOTIFY_FLIGHT, "Fly", () -> {
             if (flyTest(context, notify)) {
-                context.fPlayer.setFlying(true);
+                if(FactionsPlugin.getInstance().isSOTW() && !Permission.SOTW.has(context.sender)){
+                    context.fPlayer.msg(TL.PLAYER_SOTW_NOFLY);
+                }else{
+                    context.fPlayer.setFlying(true);
+                }
             }
         }, this.plugin.conf().commands().fly().getDelay());
+        return true;
     }
 
     private boolean flyTest(final CommandContext context, boolean notify) {
@@ -63,7 +84,7 @@ public class CmdFly extends FCommand {
                 context.msg(TL.COMMAND_FLY_NO_ACCESS, factionAtLocation.getTag(context.fPlayer));
             }
             return false;
-        } else if (FlightUtil.instance().enemiesNearby(context.fPlayer, FactionsPlugin.getInstance().conf().commands().fly().getEnemyRadius())) {
+        } else if (!FactionsPlugin.getInstance().getConfigManager().getMainConfig().commands().fly().ignoreDisableInWorlds().contains(context.player.getWorld().getName()) && FlightUtil.instance().enemiesNearby(context.fPlayer, FactionsPlugin.getInstance().conf().commands().fly().getEnemyRadius())) {
             if (notify) {
                 context.msg(TL.COMMAND_FLY_ENEMY_NEARBY);
             }

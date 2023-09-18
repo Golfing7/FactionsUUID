@@ -5,6 +5,7 @@ import com.massivecraft.factions.Faction;
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.FactionsPlugin;
 import com.massivecraft.factions.perms.Relation;
+import com.massivecraft.factions.perms.Role;
 import com.massivecraft.factions.struct.Permission;
 import com.massivecraft.factions.tag.FactionTag;
 import com.massivecraft.factions.tag.FancyTag;
@@ -33,6 +34,8 @@ public class CmdShow extends FCommand {
     public CmdShow() {
         this.aliases.add("show");
         this.aliases.add("who");
+        this.aliases.add("f");
+        this.aliases.add("which");
 
         // add defaults to /f show in case config doesnt have it
         defaults.add("{header}");
@@ -48,6 +51,7 @@ public class CmdShow extends FCommand {
         defaults.add("<a>Allies(<i>{allies}<a>/<i>{max-allies}<a>): {allies-list}");
         defaults.add("<a>Online: (<i>{online}<a>/<i>{members}<a>): {online-list}");
         defaults.add("<a>Offline: (<i>{offline}<a>/<i>{members}<a>): {offline-list}");
+        defaults.add("<a>Alts: (<i>{alts}<a>): {alt-list}");
 
         this.optionalArgs.put("faction tag", "yours");
 
@@ -96,6 +100,10 @@ public class CmdShow extends FCommand {
 
         List<String> messageList = new ArrayList<>();
         for (String raw : show) {
+            if(context.fPlayer != null && faction != context.fPlayer.getFaction() && !Permission.CLAIM_SEEALL.has(context.sender)){
+                raw = raw.replace("{chunks}", "???");
+            }
+
             String parsed = Tag.parsePlain(faction, context.fPlayer, raw); // use relations
             if (parsed == null) {
                 continue; // Due to minimal f show.
@@ -140,6 +148,9 @@ public class CmdShow extends FCommand {
                     StringBuilder builder = new StringBuilder();
                     builder.append(parsed.replace(tag.getTag(), ""));
                     switch (tag) {
+                        case ALT_LIST:
+                            this.onAltMessage(builder, recipient, faction);
+                            break;
                         case ONLINE_LIST:
                             this.onOffLineMessage(builder, recipient, faction, true);
                             break;
@@ -168,6 +179,16 @@ public class CmdShow extends FCommand {
     private void onOffLineMessage(StringBuilder builder, CommandSender recipient, Faction faction, boolean online) {
         boolean first = true;
         for (FPlayer p : MiscUtil.rankOrder(faction.getFPlayersWhereOnline(online))) {
+            String name = p.getNameAndTitle();
+            builder.append(first ? name : ", " + name);
+            first = false;
+        }
+        recipient.sendMessage(FactionsPlugin.getInstance().txt().parse(builder.toString()));
+    }
+
+    private void onAltMessage(StringBuilder builder, CommandSender recipient, Faction faction) {
+        boolean first = true;
+        for (FPlayer p : MiscUtil.rankOrder(faction.getFPlayersWhereRole(Role.ALT))) {
             String name = p.getNameAndTitle();
             builder.append(first ? name : ", " + name);
             first = false;

@@ -1,15 +1,8 @@
 package com.massivecraft.factions.cmd;
 
 import com.massivecraft.factions.FactionsPlugin;
-import com.massivecraft.factions.cmd.claim.CmdAutoClaim;
-import com.massivecraft.factions.cmd.claim.CmdClaim;
-import com.massivecraft.factions.cmd.claim.CmdClaimAt;
-import com.massivecraft.factions.cmd.claim.CmdClaimFill;
-import com.massivecraft.factions.cmd.claim.CmdClaimLine;
-import com.massivecraft.factions.cmd.claim.CmdSafeunclaimall;
-import com.massivecraft.factions.cmd.claim.CmdUnclaim;
-import com.massivecraft.factions.cmd.claim.CmdUnclaimall;
-import com.massivecraft.factions.cmd.claim.CmdWarunclaimall;
+import com.massivecraft.factions.cmd.alts.CmdAlts;
+import com.massivecraft.factions.cmd.claim.*;
 import com.massivecraft.factions.cmd.money.CmdMoney;
 import com.massivecraft.factions.cmd.relations.CmdRelationAlly;
 import com.massivecraft.factions.cmd.relations.CmdRelationEnemy;
@@ -17,6 +10,7 @@ import com.massivecraft.factions.cmd.relations.CmdRelationNeutral;
 import com.massivecraft.factions.cmd.relations.CmdRelationTruce;
 import com.massivecraft.factions.cmd.role.CmdDemote;
 import com.massivecraft.factions.cmd.role.CmdPromote;
+import com.massivecraft.factions.cmd.strikes.CmdStrike;
 import com.massivecraft.factions.landraidcontrol.DTRControl;
 import com.massivecraft.factions.landraidcontrol.PowerControl;
 import com.massivecraft.factions.util.TL;
@@ -122,7 +116,20 @@ public class FCmdRoot extends FCommand implements CommandExecutor {
     public CmdTrail cmdTrail = new CmdTrail();
     public CmdDebug cmdDebug = new CmdDebug();
     public CmdTNT cmdTNT = new CmdTNT();
+    public CmdUpgrade cmdUpgrade = new CmdUpgrade();
     public CmdListClaims cmdListClaims = new CmdListClaims();
+    public CmdStrike cmdStrike = new CmdStrike();
+    public CmdCorner cmdCorner = new CmdCorner();
+    public CmdStealth cmdStealth = new CmdStealth();
+    public CmdInspect cmdInspect = new CmdInspect();
+
+    public CmdSotw cmdSotw = new CmdSotw();
+
+    public CmdAlts cmdAlts = new CmdAlts();
+
+    public CmdSeePaypal cmdSeePaypal = new CmdSeePaypal();
+
+    public CmdSetPaypal cmdSetPaypal = new CmdSetPaypal();
 
     public FCmdRoot() {
         super();
@@ -139,9 +146,14 @@ public class FCmdRoot extends FCommand implements CommandExecutor {
         this.setHelpShort("The faction base command");
         this.helpLong.add(FactionsPlugin.getInstance().txt().parseTags("<i>This command contains all faction stuff."));
 
+        this.addSubCommand(this.cmdAlts);
+        this.addSubCommand(this.cmdCorner);
+        this.addSubCommand(this.cmdStealth);
         this.addSubCommand(this.cmdAdmin);
         this.addSubCommand(this.cmdAutoClaim);
         this.addSubCommand(this.cmdBoom);
+        this.addSubCommand(this.cmdSetPaypal);
+        this.addSubCommand(this.cmdSeePaypal);
         this.addSubCommand(this.cmdBypass);
         this.addSubCommand(this.cmdChat);
         this.addSubCommand(this.cmdToggleAllianceChat);
@@ -164,6 +176,7 @@ public class FCmdRoot extends FCommand implements CommandExecutor {
         this.addSubCommand(this.cmdMod);
         this.addSubCommand(this.cmdMoney);
         this.addSubCommand(this.cmdOpen);
+        this.addSubCommand(this.cmdInspect);
         this.addSubCommand(this.cmdOwner);
         this.addSubCommand(this.cmdOwnerList);
         this.addSubCommand(this.cmdPeaceful);
@@ -211,6 +224,9 @@ public class FCmdRoot extends FCommand implements CommandExecutor {
         this.addSubCommand(this.cmdNear);
         this.addSubCommand(this.cmdDebug);
         this.addSubCommand(this.cmdListClaims);
+        this.addSubCommand(this.cmdUpgrade);
+        this.addSubCommand(this.cmdStrike);
+        this.addSubCommand(this.cmdSotw);
         if (FactionsPlugin.getInstance().getLandRaidControl() instanceof PowerControl) {
             FactionsPlugin.getInstance().getLogger().info("Using POWER for land/raid control. Enabling power commands.");
             this.addSubCommand(this.cmdPermanentPower);
@@ -241,11 +257,7 @@ public class FCmdRoot extends FCommand implements CommandExecutor {
         } else {
             this.addSubCommand(this.cmdTop);
         }
-        if (Bukkit.getServer().getPluginManager().isPluginEnabled("PlayerVaults")) {
-            FactionsPlugin.getInstance().getLogger().info("Found PlayerVaults hook, adding /f vault and /f setmaxvault commands.");
-            this.addSubCommand(new CmdSetMaxVaults());
-            this.addSubCommand(new CmdVault());
-        }
+        this.addSubCommand(new CmdVault());
         if (CommodoreProvider.isSupported()) {
             brigadierManager.build();
         }

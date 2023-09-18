@@ -118,8 +118,12 @@ public enum TL {
     COMMAND_CHATSPY_DESCRIPTION("Enable admin chat spy mode"),
 
     COMMAND_CLAIM_INVALIDRADIUS("&cIf you specify a radius, it must be at least 1."),
+    COMMAND_CLAIM_TOOBIG("&cYou can't claim a radius that large! Try <= %s!"),
+    COMMAND_CLAIM_TOOBIGCONFIRM("&eAre you sure you want to claim in a radius of &d%s&e? Type &d/f claim confirm &eto confirm."),
+    COMMAND_CLAIM_RADIUS("&eClaiming &d%s &echunks at &d%s&e, &d%s&e for &d%s&e."),
     COMMAND_CLAIM_DENIED("&cYou do not have permission to claim in a radius."),
     COMMAND_CLAIM_DESCRIPTION("Claim land from where you are standing"),
+    COMMAND_CLAIM_OUTSIDEBORDER("&cYou can't make a claim outside of the world border!"),
 
     COMMAND_CLAIMFILL_DESCRIPTION("Claim land filling in a gap in claims"),
     COMMAND_CLAIMFILL_ABOVEMAX("&cThe maximum limit for claim fill is %s."),
@@ -280,6 +284,8 @@ public enum TL {
     COMMAND_HELP_MOAR_3("&eEven more commands for server admins:"),
     COMMAND_HELP_DESCRIPTION("Display a help page"),
 
+    COMMAND_SOTW_DESCRIPTION("Turn sotw on/off"),
+
     COMMAND_HOME_DENIED("&cSorry, you cannot teleport to the home of %s"),
     COMMAND_HOME_DISABLED("&cSorry, Faction homes are disabled on this server."),
     COMMAND_HOME_TELEPORTDISABLED("&cSorry, the ability to teleport to Faction homes is disabled on this server."),
@@ -318,6 +324,18 @@ public enum TL {
     COMMAND_JOIN_DESCRIPTION("Join a faction"),
     COMMAND_JOIN_BANNED("&cYou are banned from %1$s &c:("),
 
+    COMMAND_ALT_OPEN("&eSuccessfully opened %1$s &eto alts with code &d%2$s&e."),
+    COMMAND_ALT_ALREADYOPEN("%1$s &cis already open to alts with code %2$s."),
+    COMMAND_ALT_CLOSE("&eSuccessfully closed %1$s &eto new alts."),
+    COMMAND_ALT_ALREADYCLOSED("%1$s &cis already closed to alts."),
+    COMMAND_ALT_NOTOPEN("%1$s &cis not open to new alts!"),
+    COMMAND_ALT_WRONGCODE("%1$s &cis not the correct code for %2$s&c!"),
+    COMMAND_ALT_SUCCESS("&e%1$s &esuccessfully joined %2$s &eas an alt."),
+    COMMAND_ALT_USAGE("Faction alt control commands"),
+    COMMAND_ALT_OPENUSAGE("Open a faction to new alts"),
+    COMMAND_ALT_CLOSEUSAGE("Close a faction to new alts"),
+    COMMAND_ALT_JOINUSAGE("Join a faction as an alt"),
+
     COMMAND_KICK_CANDIDATES("Players you can kick: "),
     COMMAND_KICK_CLICKTOKICK("Click to kick "),
     COMMAND_KICK_SELF("&cYou cannot kick yourself."),
@@ -331,6 +349,10 @@ public enum TL {
     COMMAND_KICK_KICKS("&eYou kicked %1$s&e from the faction %2$s&e!"), //kicker perspective
     COMMAND_KICK_KICKED("%1$s&e kicked you from %2$s&e! :O"), //kicked player perspective
     COMMAND_KICK_DESCRIPTION("Kick a player from the faction"),
+
+    COMMAND_INSPECT_DESCRIPTION("Inspect block actions in your faction claims"),
+    COMMAND_INSPECT_TOGGLE("&eToggled inspect mode: %1$s&e!"),
+    COMMAND_INSPECT_BADINDEX("&c%1$s isn't a valid index!"),
 
     COMMAND_LIST_FACTIONLIST("Faction List "),
     COMMAND_LIST_TOLIST("to list the factions"),
@@ -382,7 +404,10 @@ public enum TL {
     COMMAND_MONEYBALANCE_DESCRIPTION("Show your factions current money balance"),
 
     COMMAND_MONEYDEPOSIT_DESCRIPTION("Deposit money"),
+    COMMAND_MONEYDEPOSIT_FAIL("&cYou can't deposit that little money!"),
     COMMAND_MONEYDEPOSIT_DEPOSITED("%1$s deposited %2$s in the faction bank: %3$s"),
+    COMMAND_MONEYMODIFY_DESCRIPTION("Modify faction bank money."),
+    COMMAND_MONEYMODIFY_MODIFIED("Modified %1$s bank by %2$s"),
 
     COMMAND_MONEYTRANSFERFF_DESCRIPTION("Transfer f -> f"),
     COMMAND_MONEYTRANSFERFF_TRANSFER("%1$s transferred %2$s from the faction \"%3$s\" to the faction \"%4$s\""),
@@ -448,6 +473,7 @@ public enum TL {
     COMMAND_PERMANENT_YOURS("%1$s has %2$s your faction"),
     COMMAND_PERMANENT_OTHER("%s&e has %s the faction '%s&e'."),
     COMMAND_PROMOTE_TARGET("You've been %1$s to %2$s"),
+    COMMAND_PROMOTE_ISALT("That player is an alt!"),
     COMMAND_PROMOTE_SUCCESS("You successfully %1$s %2$s to %3$s"),
     COMMAND_PROMOTE_PROMOTED("promoted"),
     COMMAND_PROMOTE_DEMOTED("demoted"),
@@ -499,6 +525,51 @@ public enum TL {
     COMMAND_RELOAD_TIME("&eReloaded &dall configuration files &efrom disk, took &d%1$d ms&e."),
     COMMAND_RELOAD_DESCRIPTION("Reload data file(s) from disk"),
 
+    COMMAND_ROSTER_USAGE("Control your faction's roster"),
+    COMMAND_ROSTER_ROTATE_FULL("You can't rotate into your faction! There isn't enough room!"),
+    COMMAND_ROSTER_ROTATE_SUCCESS("%1$s &erotated into %2$s&e."),
+    COMMAND_ROSTER_ROTATE_OUT("%1$s &ewas rotated out of %2$s&e."),
+    COMMAND_ROSTER_JOIN("%1$s &ejoined %2$s&e's roster."),
+
+    COMMAND_ROSTER_LIST_USAGE("List your faction's roster"),
+    COMMAND_ROSTER_LIST_NOROSTER("&cYou aren't on a roster"),
+    COMMAND_ROSTER_LIST_HEADER("%1$s&e's roster"),
+    COMMAND_ROSTER_LIST_FORMAT("&e<&d!&e> %1$s &8- &e%2$s"),
+
+    COMMAND_ROSTER_HELP_USAGE("View info about how rosters work"),
+    COMMAND_ROSTER_HELP_USED("&eRosters are very simple on this server!\n" +
+            "&8&m------------------------------------------------\n" +
+            "&eInvite players using the &d/f invite &ecommand and they'll be automatically added to your roster when they use &d/f join&e.\n" +
+            "&8&m------------------------------------------------\n" +
+            "&eRotations are done via the &d/f join &ecommand as well.\n" +
+            "&eSimply type &d/f join (your-faction)&e and you will be automatically rotated into your current roster.\n" +
+            "&8&m------------------------------------------------\n" +
+            "&eManaging your roster is easy as well.\n" +
+            "&eIf you would like to &cremove &esomeone from your roster, just use the &d/f kick &ecommand!\n" +
+            "&ePromotions are handled as if the player were in your faction as well, just use the &d/f promote&e command!"),
+
+    COMMAND_STRIKE_LIST_USAGE("List a faction's strikes"),
+    COMMAND_STRIKE_LIST_NOFACTION("&cYou need to specify a faction!"),
+    COMMAND_STRIKE_LIST_HEADER("%1$s&e's strike info:"),
+    COMMAND_STRIKE_LIST_FORMAT("&e<&d%1$s&e> %2$s &8- &e%3$s"),
+    COMMAND_STRIKE_LIST_BLAMELESS("%1$s &ehasn't been striked."),
+
+    COMMAND_STRIKE_GIVE_USAGE("Give a faction a strike... They broke the rules!"),
+    COMMAND_STRIKE_GIVE_SUCCESS("&eGiven %1$s &ea strike for &d%2$s"),
+    COMMAND_STRIKE_GIVE_BROADCAST("&8&m-----------------------------------\n" +
+            "&c%1$s &7has been striked for &c%2$s&7!\n" +
+            "&8&m-----------------------------------"),
+
+    COMMAND_STRIKE_TAKE_USAGE("Take a strike from a faction... We're sorry :("),
+    COMMAND_STRIKE_TAKE_DOESNTEXIST("&cThat strike doesn't exist! Try a different index."),
+    COMMAND_STRIKE_TAKE_SUCCESS("&eRemoved a strike from %1$s&e."),
+
+    COMMAND_STRIKE_USAGE("Strike commands for factions"),
+
+    COMMAND_MISSIONS_USAGE("View and manage missions"),
+
+    COMMAND_ROSTER_LEAVE_CONFIRM("&cAre you sure you want to leave your faction? Roster rotations are done automatically! Leaving your faction will remove you from your roster."),
+
     COMMAND_SAFEUNCLAIMALL_DESCRIPTION("Unclaim all safe zone land"),
     COMMAND_SAFEUNCLAIMALL_UNCLAIMED("&eYou unclaimed ALL safe zone land."),
     COMMAND_SAFEUNCLAIMALL_UNCLAIMEDLOG("%1$s unclaimed all safe zones."),
@@ -531,19 +602,32 @@ public enum TL {
     COMMAND_SETMAXVAULTS_DESCRIPTION("Set max vaults for a Faction."),
     COMMAND_SETMAXVAULTS_SUCCESS("&aSet max vaults for &e%s &ato &b%d"),
 
+    COMMAND_SETPAYPAL_DESCRIPTION("Set paypal for your faction"),
+    COMMAND_SETPAYPAL_NOTADMIN("&cYou must be a faction admin to setpaypal."),
+    COMMAND_SETPAYPAL_NOTVALID("&c%1$s isn't a valid email address!"),
+    COMMAND_SETPAYPAL_SUCCESS("&eSet &ayour faction&e's paypal link to &c%1$s&e."),
+
+    COMMAND_SEEPAYPAL_DESCRIPTION("Set paypal for your faction"),
+    COMMAND_SEEPAYPAL_ISNTSET("%1$s&e's paypal link has not been set."),
+    COMMAND_SEEPAYPAL_SEE("%1$s's paypal link is &a%2$s"),
+
     COMMAND_TNT_TERRITORYONLY("&cCommand can only be run from your faction's territory!"),
+    COMMAND_TNT_ADMINSET_USAGE("Set tnt as an admin"),
+    COMMAND_TNT_ADMINSET_SETSUCCESSFUL("&eSet %1$s&e's tnt to &c%2$s&&e."),
     COMMAND_TNT_DEPOSIT_DESCRIPTION("Add to your faction's TNT bank"),
     COMMAND_TNT_DEPOSIT_FAIL_FULL("&cFaction bank already at maximum!"),
     COMMAND_TNT_DEPOSIT_FAIL_NOTENOUGH("&cYou do not have that much TNT!"),
+    COMMAND_TNT_DEPOSIT_FAIL_NONE("&cYou do not have any TNT to deposit!"),
     COMMAND_TNT_DEPOSIT_FAIL_POSITIVE("&cMust deposit at least one!"),
     COMMAND_TNT_DEPOSIT_SUCCESS("&eYour faction now has %d TNT"),
     COMMAND_TNT_FILL_DESCRIPTION("Fill TNT into nearby dispensers"),
     COMMAND_TNT_FILL_MESSAGE("&eFilled %d TNT into %d dispensers. %d left in the faction bank."),
     COMMAND_TNT_FILL_FAIL_MAXRADIUS("&c%d is bigger than the maximum radius of %d"),
     COMMAND_TNT_FILL_FAIL_NOTENOUGH("&cThe faction bank does not have %d TNT!"),
+    COMMAND_TNT_FILL_FAIL_NEEDMORE("&cYou would need %d tnt to fill that many dispensers! The most you can do is %d per!"),
     COMMAND_TNT_FILL_FAIL_POSITIVE("&cPositive values only!"),
     COMMAND_TNT_INFO_DESCRIPTION("View your faction's TNT bank"),
-    COMMAND_TNT_INFO_MESSAGE("&eYour faction has %d TNT"),
+    COMMAND_TNT_INFO_MESSAGE("&eYour faction has &c%1$s &eout of &c%2$s &eTNT."),
     COMMAND_TNT_SIPHON_DESCRIPTION("Take TNT from nearby dispensers"),
     COMMAND_TNT_SIPHON_MESSAGE("&eAcquired %d TNT, for a total of %d in the faction bank."),
     COMMAND_TNT_SIPHON_FAIL_POSITIVE("&cPositive values only!"),
@@ -553,6 +637,11 @@ public enum TL {
     COMMAND_TNT_WITHDRAW_MESSAGE("&eWithdrew %d TNT. %d left in the faction bank."),
     COMMAND_TNT_WITHDRAW_FAIL_NOTENOUGH("&cThe faction bank does not have %d TNT!"),
     COMMAND_TNT_WITHDRAW_FAIL_POSITIVE("&cPositive values only!"),
+
+    COMMAND_UPGRADE_NOT_ENOUGH("&cYou don't have enough money to upgrade that!"),
+    COMMAND_UPGRADE_ALREADY_MAX("&cThat is already maxed out!"),
+    COMMAND_UPGRADE_SUCCESSFUL("&eSuccessfully upgraded &d%1$s &eto level &d%2$s&e."),
+    COMMAND_UPGRADE_DESCRIPTION("Upgrade your faction"),
 
     COMMAND_VAULT_DESCRIPTION("/f vault <number> to open one of your Faction's vaults."),
     COMMAND_VAULT_TOOHIGH("&cYou tried to open vault %d but your Faction only has %d vaults."),
@@ -637,6 +726,7 @@ public enum TL {
     COMMAND_UNCLAIM_WARZONE_SUCCESS("&eWar zone was unclaimed."),
     COMMAND_UNCLAIM_WARZONE_NOPERM("&cThis is a war zone. You lack permissions to unclaim."),
     COMMAND_UNCLAIM_UNCLAIMED("%1$s&e unclaimed some of your land."),
+    COMMAND_UNCLAIM_UNCLAIMEDAMOUNT("%1$s&e unclaimed &d%2$s &eland."),
     COMMAND_UNCLAIM_UNCLAIMS("&eYou unclaimed this land."),
     COMMAND_UNCLAIM_WRONGFACTIONOTHER("&cAttempted to unclaim land for incorrect faction"),
     COMMAND_UNCLAIM_LOG("%1$s unclaimed land at (%2$s) from the faction: %3$s"),
@@ -655,10 +745,23 @@ public enum TL {
     COMMAND_VERSION_VERSION("&eYou are running %1$s"),
     COMMAND_VERSION_DESCRIPTION("Show plugin and translation version information"),
 
+    COMMAND_STEALTH_DESCRIPTION("Go into flight stealth mode"),
+    COMMAND_STEALTH_TOGGLE("&eToggled stealth mode %1$s&e!"),
+
+    COMMAND_CORNER_DESCRIPTION("Claim an entire corner for your faction"),
+    COMMAND_CORNER_MUSTBEINCORNER("&cYou must be standing in a corner to use this command!"),
+    COMMAND_CORNER_ISNTSOTW("&cYou can only claim a corner during SOTW!"),
+    COMMAND_CORNER_NOMOREPOWER("&cYour faction ran out of power and didn't claim the full corner!"),
+    COMMAND_CORNER_SUCCESS("&eSuccessfully claimed this corner for &ayour faction&e!"),
+    COMMAND_CORNER_MUSTOWN("&cYou must own the corner to claim it!"),
+
     COMMAND_WARUNCLAIMALL_DESCRIPTION("Unclaim all war zone land"),
     COMMAND_WARUNCLAIMALL_SUCCESS("&eYou unclaimed ALL war zone land."),
     COMMAND_WARUNCLAIMALL_LOG("%1$s unclaimed all war zones."),
 
+    COMMAND_SPAWNERCHUNKS_USAGE("Set a spawner chunk for your faction"),
+    COMMAND_SPAWNERCHUNKS_NOTINCLAIMEDTERRITORY("&cYou must stand in your own chunks."),
+    COMMAND_SPAWNERCHUNKS_MAXCHUNKS("&cYou can't set any more spawner chunks."),
 
     /**
      * Leaving - This is accessed through a command, and so it MAY need a COMMAND_* slug :s
@@ -698,6 +801,7 @@ public enum TL {
     CLAIM_TOOVERCLAIM("to overclaim this land"),
     CLAIM_FOROVERCLAIM("for over claiming this land"),
     CLAIM_CLAIMED("&d%s&e claimed land for &d%s&e from &d%s&e."),
+    CLAIM_CLAIMEDAMOUNT("&d%s&e claimed &d%s &eland for &d%s&e."),
     CLAIM_CLAIMEDLOG("%s claimed land at (%s) for the faction: %s"),
     CLAIM_OVERCLAIM_DISABLED("&eOver claiming is disabled on this server."),
     CLAIM_TOOCLOSETOOTHERFACTION("&eYour claim is too close to another Faction. Buffer required is %d"),
@@ -810,6 +914,7 @@ public enum TL {
     ROLE_MODERATOR("moderator"),
     ROLE_NORMAL("normal member"),
     ROLE_RECRUIT("recruit"),
+    ROLE_ALT("alt"),
 
     /**
      * Region types.
@@ -822,6 +927,7 @@ public enum TL {
     /**
      * In the player and entity listeners
      */
+    PLAYER_CANTADDTHATITEM("&cYou cant put that item in your f chest!"),
     PLAYER_CANTHURT("&eYou may not harm other players in %s"),
     PLAYER_SAFEAUTO("&eThis land is now a safe zone."),
     PLAYER_WARAUTO("&eThis land is now a war zone."),
@@ -837,6 +943,7 @@ public enum TL {
     PLAYER_COMMAND_PERMANENT("&cYou can't use the command '%s' because you are in a permanent faction."),
     PLAYER_COMMAND_ALLY("&cYou can't use the command '%s' in ally territory."),
     PLAYER_COMMAND_WILDERNESS("&cYou can't use the command '%s' in the wilderness."),
+    PLAYER_SOTW_NOFLY("&cYou cannot fly during SOTW!"),
 
     PLAYER_PORTAL_NOTALLOWED("&cDestination portal can't be created there."),
 
@@ -857,6 +964,11 @@ public enum TL {
     PLAYER_PVP_NEUTRALFAIL("&eYou can't hurt %s&e in their own territory unless you declare them as an enemy."),
     PLAYER_PVP_TRIED("%s&e tried to hurt you."),
 
+    INSPECT_CANT_THERE("&cYou can't inspect there!"),
+    INSPECT_NODATA("&cThere isn't any data for that location!"),
+    INSPECT_HEADER("&eInspect data for &6%1$s&e:"),
+    INSPECT_FORMAT("&e%1$s. &cUser: &e%2$s &cTime Since: &e%3$s &cType: &e%4$s &cAction: &e%5$s"),
+
     PERM_BUILD("Building blocks"),
     PERM_DESTROY("Breaking blocks"),
     PERM_PAINBUILD("If allow, can build but hurts to do so"),
@@ -875,14 +987,18 @@ public enum TL {
     PERM_ECONOMY("Spending faction money"),
     PERM_TERRITORY("Claiming or unclaiming faction territory"),
     PERM_HOME("Visiting the faction home"),
+    PERM_REPEATER("Changing repeaters"),
     PERM_SETHOME("Setting the faction home"),
     PERM_LISTCLAIMS("View listed faction claims"),
     PERM_SETWARP("Setting and unsetting faction warps"),
     PERM_TNTDEPOSIT("Deposit TNT into faction bank"),
     PERM_TNTWITHDRAW("Withdraw TNT from faction bank"),
+    PERM_CLAIMCORNER("Claim a corner for your faction"),
     PERM_WARP("Using faction warps"),
     PERM_FLY("Flying in faction territory"),
     PERM_OWNER("Set ownership of land using /f owner in faction territory"),
+    PERM_ROSTERCONTROL("Control a faction's roster"),
+    PERM_TASKS("Manage a faction's tasks"),
 
     PERM_SHORT_BUILD("build"),
     PERM_SHORT_DESTROY("destroy"),
@@ -907,9 +1023,13 @@ public enum TL {
     PERM_SHORT_SETWARP("set warps"),
     PERM_SHORT_TNTDEPOSIT("deposit TNT"),
     PERM_SHORT_TNTWITHDRAW("withdraw TNT"),
+    PERM_SHORT_REPEATER("change repeaters"),
     PERM_SHORT_WARP("use warps"),
     PERM_SHORT_FLY("fly"),
     PERM_SHORT_OWNER("set ownership"),
+    PERM_SHORT_CLAIMCORNER("claim a corner"),
+    PERM_SHORT_ROSTERCONTROL("control roster"),
+    PERM_SHORT_TASKS("manage tasks"),
 
     PERM_DENIED_WILDERNESS("&cYou can't %s in the wilderness"),
     PERM_DENIED_SAFEZONE("&c>You can't %s in a safe zone"),
@@ -945,6 +1065,12 @@ public enum TL {
      */
     NOPAGES("&eSorry. No Pages available."),
     INVALIDPAGE("&eInvalid page. Must be between 1 and %1$d"),
+
+    /**
+     * Spawners
+     */
+    SPAWNERS_CANTPLACEINWILD("&cYou can't place spawners in the wild."),
+    SPAWNERS_CANTPLACEOUTSIDESPAWNERCHUNKS("&cYou can't place spawners outside of spawner chunks."),
 
     /**
      * The ones here before I started messing around with this

@@ -30,6 +30,11 @@ public class CmdAdmin extends FCommand {
             return;
         }
 
+        if(fyou.getRole() == Role.ALT){
+            context.msg(TL.COMMAND_PROMOTE_ISALT);
+            return;
+        }
+
         boolean permAny = Permission.ADMIN_ANY.has(context.sender, false);
         Faction targetFaction = fyou.getFaction();
 

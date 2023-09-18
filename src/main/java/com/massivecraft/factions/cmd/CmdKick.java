@@ -63,11 +63,6 @@ public class CmdKick extends FCommand {
 
         Faction toKickFaction = toKick.getFaction();
 
-        if (toKickFaction.isWilderness()) {
-            context.sender.sendMessage(TL.COMMAND_KICK_NONE.toString());
-            return;
-        }
-
         // players with admin-level "disband" permission can bypass these requirements
         if (!Permission.KICK_ANY.has(context.sender)) {
             if (toKickFaction != context.faction) {
@@ -83,6 +78,11 @@ public class CmdKick extends FCommand {
             if (!FactionsPlugin.getInstance().getLandRaidControl().canKick(toKick, context)) {
                 return;
             }
+        }
+
+        if (toKickFaction.isWilderness()) {
+            context.sender.sendMessage(TL.COMMAND_KICK_NONE.toString());
+            return;
         }
 
         // if economy is enabled, they're not on the bypass list, and this command has a cost set, make sure they can pay

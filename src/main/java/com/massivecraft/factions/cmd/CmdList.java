@@ -82,7 +82,13 @@ public class CmdList extends FCommand {
                 lines.add(plugin.txt().parse(Tag.parsePlain(faction, plugin.conf().commands().list().getFactionlessEntry())));
                 continue;
             }
-            lines.add(plugin.txt().parse(Tag.parsePlain(faction, context.fPlayer, plugin.conf().commands().list().getEntry())));
+            String entry = plugin.conf().commands().list().getEntry();
+
+            if(context.fPlayer != null && context.fPlayer.getFaction() != faction && !Permission.CLAIM_SEEALL.has(context.sender)){
+                entry = entry.replace("{chunks}", "???");
+            }
+
+            lines.add(plugin.txt().parse(Tag.parsePlain(faction, context.fPlayer, entry)));
         }
 
         if (!footer.isEmpty()) {

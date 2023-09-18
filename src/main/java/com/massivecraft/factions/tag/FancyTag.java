@@ -5,6 +5,7 @@ import com.massivecraft.factions.Faction;
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.FactionsPlugin;
 import com.massivecraft.factions.perms.Relation;
+import com.massivecraft.factions.perms.Role;
 import com.massivecraft.factions.util.MiscUtil;
 import com.massivecraft.factions.util.QuadFunction;
 import mkremins.fanciful.FancyMessage;
@@ -25,7 +26,29 @@ public enum FancyTag implements Tag {
         FancyMessage currentOnline = FactionsPlugin.getInstance().txt().parseFancy(prefix);
         boolean firstOnline = true;
         for (FPlayer p : MiscUtil.rankOrder(target.getFPlayersWhereOnline(true, fme))) {
+            if(p.getRole() == Role.ALT)continue;
             if (fme.getPlayer() != null && !fme.getPlayer().canSee(p.getPlayer())) {
+                continue; // skip
+            }
+            String name = p.getNameAndTitle();
+            currentOnline.then(firstOnline ? name : ", " + name);
+            currentOnline.tooltip(tipPlayer(p, gm)).color(fme.getColorTo(p));
+            firstOnline = false;
+            if (currentOnline.toJSONString().length() > ARBITRARY_LIMIT) {
+                fancyMessages.add(currentOnline);
+                currentOnline = new FancyMessage("");
+            }
+        }
+        fancyMessages.add(currentOnline);
+        return firstOnline && Tag.isMinimalShow() ? null : fancyMessages;
+    }),
+    ALT_LIST("alt-list", (target, fme, prefix, gm) -> {
+        List<FancyMessage> fancyMessages = new ArrayList<>();
+        FancyMessage currentOnline = FactionsPlugin.getInstance().txt().parseFancy(prefix);
+        boolean firstOnline = true;
+        for (FPlayer p : MiscUtil.rankOrder(target.getFPlayersWhereRole(Role.ALT))) {
+            if(p.getRole() == Role.ALT)continue;
+            if (fme.getPlayer() != null) {
                 continue; // skip
             }
             String name = p.getNameAndTitle();
@@ -44,10 +67,10 @@ public enum FancyTag implements Tag {
         List<FancyMessage> fancyMessages = new ArrayList<>();
         FancyMessage currentOffline = FactionsPlugin.getInstance().txt().parseFancy(prefix);
         boolean firstOffline = true;
-        for (FPlayer p : MiscUtil.rankOrder(target.getFPlayers())) {
+        for (FPlayer p : MiscUtil.rankOrder(target.getFPlayersWhereOnline(false, fme))) {
             String name = p.getNameAndTitle();
             // Also make sure to add players that are online BUT can't be seen.
-            if (!p.isOnline() || (fme.getPlayer() != null && p.isOnline() && !fme.getPlayer().canSee(p.getPlayer()))) {
+            if (!p.isOnline() || (fme.getPlayer() != null && p.getPlayer() != null && p.isOnline() && !fme.getPlayer().canSee(p.getPlayer()))) {
                 currentOffline.then(firstOffline ? name : ", " + name);
                 currentOffline.tooltip(tipPlayer(p, gm)).color(fme.getColorTo(p));
                 firstOffline = false;
@@ -142,7 +165,7 @@ public enum FancyTag implements Tag {
             if (line.contains("{group}")) {
                 if (groupMap != null) {
                     String group = groupMap.get(UUID.fromString(fplayer.getId()));
-                    if (!group.trim().isEmpty()) {
+                    if (group != null && !group.trim().isEmpty()) {
                         newLine = newLine.replace("{group}", group);
                         break everythingOnYourWayOut;
                     }

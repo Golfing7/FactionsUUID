@@ -2,12 +2,14 @@ package com.massivecraft.factions.util;
 
 import mkremins.fanciful.FancyMessage;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,6 +19,10 @@ public class TextUtil {
 
     public TextUtil() {
         this.tags = new HashMap<>();
+    }
+
+    public static String locationToFancyString(Location location){
+        return "x " + location.getBlockX() + ", y " + location.getBlockY() + ", z " + location.getBlockZ();
     }
 
     // -------------------------------------------- //
@@ -208,5 +214,43 @@ public class TextUtil {
         ret.addAll(lines.subList(from, to));
 
         return ret;
+    }
+
+    private static final char[] chars = new char[] {
+            'a',
+            'b',
+            'c',
+            'd',
+            'e',
+            'f',
+            'g',
+            'h',
+            'i',
+            'j',
+            'k',
+            'l',
+            'm',
+            'n',
+            'o',
+            'p',
+            'q',
+            'r',
+            's',
+            't',
+            'u',
+            'v',
+            'w',
+            'x',
+            'y',
+            'z'
+    };
+
+    public static String generateRandomString(int length){
+        char[] toReturn = new char[length];
+
+        for(int z = 0; z < length; z++){
+            toReturn[z] = chars[ThreadLocalRandom.current().nextInt(chars.length)];
+        }
+        return new String(toReturn);
     }
 }

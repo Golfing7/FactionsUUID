@@ -7,6 +7,7 @@ import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.FactionsPlugin;
 import com.massivecraft.factions.event.FPlayerLeaveEvent;
 import com.massivecraft.factions.event.FactionDisbandEvent;
+import com.massivecraft.factions.gui.DisbandConfirmGUI;
 import com.massivecraft.factions.integration.Econ;
 import com.massivecraft.factions.perms.PermissibleAction;
 import com.massivecraft.factions.scoreboards.FTeamWrapper;
@@ -37,7 +38,7 @@ public class CmdDisband extends FCommand {
         boolean isfaction = context.fPlayer != null && faction == context.faction;
 
         if (isfaction) {
-            if (!faction.hasAccess(context.fPlayer, PermissibleAction.DISBAND)) {
+            if (!context.fPlayer.isAdminBypassing() && !faction.hasAccess(context.fPlayer, PermissibleAction.DISBAND)) {
                 context.msg(TL.GENERIC_NOPERMISSION.format(PermissibleAction.DISBAND));
                 return;
             }
@@ -56,6 +57,15 @@ public class CmdDisband extends FCommand {
             return;
         }
         if (!FactionsPlugin.getInstance().getLandRaidControl().canDisbandFaction(faction, context)) {
+            return;
+        }
+
+        if(FactionsPlugin.getInstance().conf().commands().disband().isConfirmGUI() && context.player != null){
+            DisbandConfirmGUI disbandConfirmGUI = new DisbandConfirmGUI(context.fPlayer, faction, 3);
+
+            disbandConfirmGUI.build();
+
+            disbandConfirmGUI.open();
             return;
         }
 

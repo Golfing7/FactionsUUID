@@ -40,6 +40,11 @@ public class CmdMod extends FCommand {
             return;
         }
 
+        if(you.getRole() == Role.ALT){
+            context.msg(TL.COMMAND_PROMOTE_ISALT);
+            return;
+        }
+
         boolean permAny = Permission.MOD_ANY.has(context.sender, false);
         Faction targetFaction = you.getFaction();
 

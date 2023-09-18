@@ -6,6 +6,7 @@ import com.massivecraft.factions.cmd.CommandContext;
 import com.massivecraft.factions.cmd.CommandRequirements;
 import com.massivecraft.factions.cmd.FCommand;
 import com.massivecraft.factions.event.LandUnclaimAllEvent;
+import com.massivecraft.factions.gui.CommandConfirmGUI;
 import com.massivecraft.factions.integration.Econ;
 import com.massivecraft.factions.perms.PermissibleAction;
 import com.massivecraft.factions.struct.Permission;
@@ -41,6 +42,27 @@ public class CmdUnclaimall extends FCommand {
                     return;
                 }
             }
+        }
+
+        if (FactionsPlugin.getInstance().getConfigManager().getMainConfig().commands().unclaimall().isConfirmGUI()) {
+            CommandConfirmGUI confirmGUI = new CommandConfirmGUI(context.fPlayer, context.faction, "Unclaim All", 3, (player) -> {
+                LandUnclaimAllEvent unclaimAllEvent = new LandUnclaimAllEvent(context.faction, context.fPlayer);
+                Bukkit.getServer().getPluginManager().callEvent(unclaimAllEvent);
+                if (unclaimAllEvent.isCancelled()) {
+                    return;
+                }
+
+                Board.getInstance().unclaimAll(context.faction.getId());
+                context.faction.msg(TL.COMMAND_UNCLAIMALL_UNCLAIMED, context.fPlayer.describeTo(context.faction, true));
+
+                if (FactionsPlugin.getInstance().conf().logging().isLandUnclaims()) {
+                    FactionsPlugin.getInstance().log(TL.COMMAND_UNCLAIMALL_LOG.format(context.fPlayer.getName(), context.faction.getTag()));
+                }
+            });
+
+            confirmGUI.build();
+            confirmGUI.open();
+            return;
         }
 
         LandUnclaimAllEvent unclaimAllEvent = new LandUnclaimAllEvent(context.faction, context.fPlayer);

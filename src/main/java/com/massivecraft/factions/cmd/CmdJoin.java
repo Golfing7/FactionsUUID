@@ -49,11 +49,6 @@ public class CmdJoin extends FCommand {
             return;
         }
 
-        if (FactionsPlugin.getInstance().conf().factions().other().getFactionMemberLimit() > 0 && faction.getFPlayers().size() >= FactionsPlugin.getInstance().conf().factions().other().getFactionMemberLimit()) {
-            context.msg(TL.COMMAND_JOIN_ATLIMIT, faction.getTag(context.fPlayer), FactionsPlugin.getInstance().conf().factions().other().getFactionMemberLimit(), fplayer.describeTo(context.fPlayer, false));
-            return;
-        }
-
         if (fplayer.hasFaction()) {
             //TODO:TL
             context.msg(TL.COMMAND_JOIN_INOTHERFACTION, fplayer.describeTo(context.fPlayer, true), (samePlayer ? "your" : "their"));
@@ -62,6 +57,13 @@ public class CmdJoin extends FCommand {
 
         if (!FactionsPlugin.getInstance().getLandRaidControl().canJoinFaction(faction, fplayer, context)) {
             return;
+        }
+
+        if(!fplayer.isAdminBypassing()){
+            if (FactionsPlugin.getInstance().conf().factions().other().getFactionMemberLimit() > 0 && faction.getSize() >= FactionsPlugin.getInstance().conf().factions().other().getFactionMemberLimit()) {
+                context.msg(TL.COMMAND_JOIN_ATLIMIT, faction.getTag(context.fPlayer), FactionsPlugin.getInstance().conf().factions().other().getFactionMemberLimit(), fplayer.describeTo(context.fPlayer, false));
+                return;
+            }
         }
 
         if (!(faction.getOpen() || faction.isInvited(fplayer) || context.fPlayer.isAdminBypassing() || Permission.JOIN_ANY.has(context.sender, false))) {

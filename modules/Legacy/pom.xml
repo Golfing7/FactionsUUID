@@ -213,10 +213,6 @@
 
     <repositories>
         <repository>
-            <id>maven.sk89q.com</id>
-            <url>http://maven.sk89q.com/repo/</url>
-        </repository>
-        <repository>
             <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
         </repository>

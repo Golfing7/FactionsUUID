@@ -1,8 +1,8 @@
 name: Factions
 version: ${project.version}-b${build.number}
 main: com.massivecraft.factions.FactionsPlugin
-authors: [Olof Larsson, Brett Flannigan, drtshock, CmdrKittens]
-softdepend: [LuckPerms]
+authors: [Olof Larsson, Brett Flannigan, drtshock, CmdrKittens, Golfing8]
+softdepend: [LuckPerms, CoreProtect]
 api-version: 1.13
 website: https://www.spigotmc.org/resources/factionsuuid.1035/
 commands:
@@ -14,7 +14,11 @@ permissions:
     description: All faction permissions.
     children:
       factions.kit.mod: true
+      factions.seepaypal: true
+      factions.essentials.bypassremoval: true
+      factions.sotw: true
       factions.config: true
+      factions.claim.bypasslimit: true
       factions.lock: true
       factions.reload: true
       factions.save: true
@@ -30,6 +34,9 @@ permissions:
   factions.kit.mod:
     description: All faction permissions but configuration and persistance.
     children:
+      factions.fly.any: true
+      factions.strike.manage: true
+      factions.claim.seeall: true
       factions.kit.halfmod: true
       factions.disband.any: true
       factions.setpeaceful: true
@@ -59,11 +66,16 @@ permissions:
     children:
       factions.kit.halfplayer: true
       factions.create: true
+      factions.setpaypal: true
       factions.title.color: true
   factions.kit.halfplayer:
     description: Can do all but create factions.
     children:
+      factions.missions: true
       factions.admin: true
+      factions.strike.view: true
+      factions.roster: true
+      factions.alts: true
       factions.autoclaim: true
       factions.chat: true
       factions.claim: true
@@ -89,6 +101,8 @@ permissions:
       factions.owner: true
       factions.ownerlist: true
       factions.power: true
+      factions.inspect: true
+      factions.stealth: true
       factions.power.any: true
       factions.relation: true
       factions.sethome: true
@@ -97,17 +111,22 @@ permissions:
       factions.stuck: true
       factions.tag: true
       factions.title: true
+      factions.setwarp: true
       factions.version: true
       factions.unclaim: true
+      factions.claimcorner: true
+      factions.tnt.*: true
       factions.unclaimall: true
       factions.scoreboard: true
       factions.showinvites: true
       factions.seechunk: true
       factions.monitorlogins: true
+      factions.warp: true
       factions.top: true
       factions.togglealliancechat: true
       factions.vault: true
       factions.mapheight: true
+      factions.promote: true
       factions.ban: true
       factions.fly: true
       factions.coleader: true
@@ -143,6 +162,8 @@ permissions:
     description: disband a faction
   factions.disband.any:
     description: disband another faction
+  factions.fly.enemy:
+    description: Fly in all territory, flight still disabled by enemies
   factions.help:
     description: display a help page
   factions.home:
@@ -220,6 +241,8 @@ permissions:
     description: list owner(s) of this claimed land
   factions.ownershipbypass:
     description: bypass ownership restrictions within own faction's territory
+  factions.promote:
+    description: promote a fellow member
   factions.setpeaceful:
     description: designate a faction as peaceful
   factions.setpermanent:
@@ -240,6 +263,10 @@ permissions:
     description: reload data file(s) from disk
   factions.save:
     description: save all data to disk
+  factions.stealth:
+    description: access to stealth command
+  factions.claimcorner:
+    description: claim a corner
   factions.sethome:
     description: set the faction home
   factions.delhome:
@@ -330,3 +357,7 @@ permissions:
     description: List claims
   factions.listclaims.other:
     description: List claims of other factions
+  factions.alts:
+    description: Usage for the alt commands
+  factions.inspect:
+    description: Access to the inspect command

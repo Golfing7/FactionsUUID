@@ -12,7 +12,6 @@ import com.massivecraft.factions.event.FactionAutoDisbandEvent;
 import com.massivecraft.factions.iface.EconomyParticipator;
 import com.massivecraft.factions.iface.RelationParticipator;
 import com.massivecraft.factions.integration.Econ;
-import com.massivecraft.factions.integration.LWC;
 import com.massivecraft.factions.landraidcontrol.DTRControl;
 import com.massivecraft.factions.landraidcontrol.LandRaidControl;
 import com.massivecraft.factions.perms.Permissible;
@@ -21,16 +20,19 @@ import com.massivecraft.factions.perms.Relation;
 import com.massivecraft.factions.perms.Role;
 import com.massivecraft.factions.struct.BanInfo;
 import com.massivecraft.factions.struct.Permission;
-import com.massivecraft.factions.util.LazyLocation;
-import com.massivecraft.factions.util.MiscUtil;
-import com.massivecraft.factions.util.RelationUtil;
-import com.massivecraft.factions.util.TL;
+import com.massivecraft.factions.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +43,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public abstract class MemoryFaction implements Faction, EconomyParticipator {
     protected String id = null;
@@ -53,11 +56,15 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
     protected Integer permanentPower;
     protected LazyLocation home;
     protected long foundedDate;
+    protected transient int maxAlts = FactionsPlugin.getInstance().conf().factions().other().maxAlts();
     protected transient long lastPlayerLoggedOffTime;
     protected double powerBoost;
     protected Map<String, Relation> relationWish = new HashMap<>();
+    protected List<StrikeInfo> strikes = new ArrayList<>();
     protected Map<FLocation, Set<String>> claimOwnership = new ConcurrentHashMap<>();
     protected transient Set<FPlayer> fplayers = new HashSet<>();
+    protected transient FPlayer fPlayerAdmin;
+    protected String payPalLink;
     protected Set<String> invites = new HashSet<>();
     protected HashMap<String, List<String>> announcements = new HashMap<>();
     protected ConcurrentHashMap<String, LazyLocation> warps = new ConcurrentHashMap<>();
@@ -68,15 +75,23 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
     protected Map<Permissible, Map<PermissibleAction, Boolean>> permissions = new HashMap<>();
     protected Map<Permissible, Map<PermissibleAction, Boolean>> permissionsOffline = new HashMap<>();
     protected Set<BanInfo> bans = new HashSet<>();
+    protected Set<FLocation> spawnerChunks = new HashSet<>();
     protected double dtr;
     protected long lastDTRUpdateTime;
     protected long frozenDTRUntilTime;
-    protected int tntBank;
+    protected int tntBank = 0;
+    protected String altJoinString = "-1";
     protected transient OfflinePlayer offlinePlayer;
+
+    protected Map<UpgradeType, Integer> upgrades = new HashMap<>();
 
     public HashMap<String, List<String>> getAnnouncements() {
         return this.announcements;
     }
+
+    protected String items = "";
+
+    protected transient Inventory inventory;
 
     public void addAnnouncement(FPlayer fPlayer, String msg) {
         List<String> list = announcements.containsKey(fPlayer.getId()) ? announcements.get(fPlayer.getId()) : new ArrayList<>();
@@ -94,6 +109,12 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         }
         fPlayer.msg(TL.FACTIONS_ANNOUNCEMENT_BOTTOM);
         announcements.remove(fPlayer.getId());
+    }
+
+    public void setItems() {
+        ItemStack[] stacks = this.getChest().getContents();
+
+        this.items = ItemBase64.itemStackArrayToBase64(stacks);
     }
 
     public void removeAnnouncements(FPlayer fPlayer) {
@@ -305,6 +326,18 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
 
         msg("<b>Your faction home has been un-set since it is no longer in your territory.");
         this.home = null;
+    }
+
+    public String getAltJoinString() {
+        return altJoinString;
+    }
+
+    public String setAltOpen() {
+        return altJoinString = TextUtil.generateRandomString(6);
+    }
+
+    public void setAltClosed(){
+        this.altJoinString = "-1";
     }
 
     public String getAccountId() {
@@ -556,6 +589,7 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
 
     public MemoryFaction(String id) {
         this.id = id;
+        this.tntBank = 0;
         this.open = FactionsPlugin.getInstance().conf().factions().other().isNewFactionsDefaultOpen();
         this.tag = "???";
         this.description = TL.GENERIC_DEFAULTDESCRIPTION.toString();
@@ -563,35 +597,50 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         this.peaceful = FactionsPlugin.getInstance().conf().factions().other().isNewFactionsDefaultPeaceful();
         this.peacefulExplosionsEnabled = false;
         this.permanent = false;
+        this.altJoinString = "-1";
         this.powerBoost = 0.0;
+        this.fPlayerAdmin = null;
         this.foundedDate = System.currentTimeMillis();
         this.maxVaults = FactionsPlugin.getInstance().conf().playerVaults().getDefaultMaxVaults();
         this.defaultRole = FactionsPlugin.getInstance().conf().factions().other().getDefaultRole();
         this.dtr = FactionsPlugin.getInstance().conf().factions().landRaidControl().dtr().getStartingDTR();
+
+        this.inventory = Bukkit.createInventory(new FChestHolder(),
+                FactionsPlugin.getInstance().conf().upgrades().chest().getDefaultRows() * 9,
+                TextUtil.parseColor(FactionsPlugin.getInstance().conf().upgrades().chest().getChestName()));
 
         resetPerms(); // Reset on new Faction so it has default values.
     }
 
     public MemoryFaction(MemoryFaction old) {
         id = old.id;
+        tntBank = old.tntBank;
         peacefulExplosionsEnabled = old.peacefulExplosionsEnabled;
         permanent = old.permanent;
         tag = old.tag;
+        payPalLink = old.payPalLink;
         description = old.description;
         open = old.open;
         foundedDate = old.foundedDate;
         peaceful = old.peaceful;
         permanentPower = old.permanentPower;
         home = old.home;
+        altJoinString = old.altJoinString;
         lastPlayerLoggedOffTime = old.lastPlayerLoggedOffTime;
         powerBoost = old.powerBoost;
         relationWish = old.relationWish;
         claimOwnership = old.claimOwnership;
         fplayers = new HashSet<>();
+        fPlayerAdmin = old.fPlayerAdmin;
         invites = old.invites;
         announcements = old.announcements;
+        this.strikes = old.strikes;
         this.defaultRole = old.defaultRole;
         this.dtr = old.dtr;
+
+        upgrades = old.upgrades;
+
+        this.items = old.items;
 
         resetPerms(); // Reset on new Faction so it has default values.
     }
@@ -606,6 +655,21 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
     public boolean noMonstersInTerritory() {
         return isSafeZone() ||
                 (peaceful && FactionsPlugin.getInstance().conf().factions().specialCase().isPeacefulTerritoryDisableMonsters());
+    }
+
+    public List<StrikeInfo> getStrikes(){
+        return new ArrayList<>(strikes);
+    }
+
+    public void addStrike(String reason, long date){
+        this.strikes.add(new StrikeInfo(date, reason));
+    }
+
+    public boolean takeStrike(int index){
+        if(this.strikes.size() <= index || index < 0)return false;
+
+        this.strikes.remove(index);
+        return true;
     }
 
     // -------------------------------
@@ -655,6 +719,10 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         return RelationUtil.getRelationTo(this, rp);
     }
 
+    public Relation getRelationToLocation(FLocation fLocation){
+        return RelationUtil.getRelationTo(this, Board.getInstance().getFactionAt(fLocation));
+    }
+
     @Override
     public Relation getRelationTo(RelationParticipator rp, boolean ignorePeaceful) {
         return RelationUtil.getRelationTo(this, rp, ignorePeaceful);
@@ -669,7 +737,7 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         if (this.relationWish.containsKey(otherFaction.getId())) {
             return this.relationWish.get(otherFaction.getId());
         }
-        return Relation.fromString(FactionsPlugin.getInstance().conf().factions().other().getDefaultRelation()); // Always default to old behavior.
+        return FactionsPlugin.getInstance().conf().factions().other().getDefaultRelationActual(); // Always default to old behavior.
     }
 
     public void setRelationWish(Faction otherFaction, Relation relation) {
@@ -745,6 +813,7 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
 
         double ret = 0;
         for (FPlayer fplayer : fplayers) {
+            if(!fplayer.getRole().isAtLeast(Role.RECRUIT))continue;
             ret += fplayer.getPower();
         }
         if (FactionsPlugin.getInstance().conf().factions().landRaidControl().power().getFactionMax() > 0 && ret > FactionsPlugin.getInstance().conf().factions().landRaidControl().power().getFactionMax()) {
@@ -761,6 +830,7 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
 
         double ret = 0;
         for (FPlayer fplayer : fplayers) {
+            if(!fplayer.getRole().isAtLeast(Role.RECRUIT))continue;
             ret += fplayer.getPowerMax();
         }
         if (FactionsPlugin.getInstance().conf().factions().landRaidControl().power().getFactionMax() > 0 && ret > FactionsPlugin.getInstance().conf().factions().landRaidControl().power().getFactionMax()) {
@@ -845,17 +915,18 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
     }
 
     public boolean removeFPlayer(FPlayer fplayer) {
-        return !this.isPlayerFreeType() && fplayers.remove(fplayer);
+        return !this.isPlayerFreeType() && (fplayers.remove(fplayer));
     }
 
     public int getSize() {
-        return fplayers.size();
+        return getFPlayers().size();
     }
 
     public Set<FPlayer> getFPlayers() {
         // return a shallow copy of the FPlayer list, to prevent tampering and
         // concurrency issues
-        return new HashSet<>(fplayers);
+        Set<FPlayer> set = new HashSet<>(fplayers);
+        return set.stream().filter(z -> z.getRole().isAtLeast(Role.RECRUIT)).collect(Collectors.toSet());
     }
 
     public Set<FPlayer> getFPlayersWhereOnline(boolean online) {
@@ -865,7 +936,7 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         }
 
         for (FPlayer fplayer : fplayers) {
-            if (fplayer.isOnline() == online) {
+            if (fplayer.isOnline() == online && fplayer.getRole().isAtLeast(Role.RECRUIT)) {
                 ret.add(fplayer);
             }
         }
@@ -881,7 +952,7 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
 
         for (FPlayer viewed : fplayers) {
             // Add if their online status is what we want
-            if (viewed.isOnline() == online) {
+            if (viewed.isOnline() == online && viewed.getRole().isAtLeast(Role.RECRUIT)) {
                 // If we want online, check to see if we are able to see this player
                 // This checks if they are in vanish.
                 if (online
@@ -904,13 +975,21 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         if (!this.isNormal()) {
             return null;
         }
-
-        for (FPlayer fplayer : fplayers) {
-            if (fplayer.getRole() == Role.ADMIN) {
-                return fplayer;
-            }
+        if(fPlayerAdmin == null || !fPlayerAdmin.getFactionId().equals(this.id) || fPlayerAdmin.getRole() != Role.ADMIN){
+            recalcFPlayerAdmin();
         }
-        return null;
+        return fPlayerAdmin;
+    }
+
+    @Override
+    public FPlayer getLeader() {
+        return getFPlayerAdmin();
+    }
+
+    public void recalcFPlayerAdmin(){
+        for(FPlayer fPlayer : fplayers){
+            if(fPlayer.getRole() == Role.ADMIN)fPlayerAdmin = fPlayer;
+        }
     }
 
     public ArrayList<FPlayer> getFPlayersWhereRole(Role role) {
@@ -936,12 +1015,30 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
 
         for (Player player : FactionsPlugin.getInstance().getServer().getOnlinePlayers()) {
             FPlayer fplayer = FPlayers.getInstance().getByPlayer(player);
-            if (fplayer.getFaction() == this) {
+            if (fplayer.getFaction() == this && fplayer.getRole().isAtLeast(Role.RECRUIT)) {
                 ret.add(player);
             }
         }
 
         return ret;
+    }
+
+    @Override
+    public Inventory getChest() {
+        if(inventory == null){
+            this.inventory = Bukkit.createInventory(new FChestHolder(),
+                    FactionsPlugin.getInstance().conf().upgrades().chest().getNumber(getUpgrade(UpgradeType.CHEST)) * 9,
+                    TextUtil.parseColor(FactionsPlugin.getInstance().conf().upgrades().chest().getChestName()));
+
+            try{
+                this.inventory.setContents(ItemBase64.itemStackArrayFromBase64(this.items));
+            }catch(IOException exc){
+                exc.printStackTrace();
+
+                Bukkit.getLogger().severe("Not able to save " + this.getTag() + "'s chest data!");
+            }
+        }
+        return inventory;
     }
 
     // slightly faster check than getOnlinePlayers() if you just want to see if
@@ -952,9 +1049,8 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
             return false;
         }
 
-        for (Player player : FactionsPlugin.getInstance().getServer().getOnlinePlayers()) {
-            FPlayer fplayer = FPlayers.getInstance().getByPlayer(player);
-            if (fplayer != null && fplayer.getFaction() == this) {
+        for (FPlayer player : fplayers) {
+            if (player != null && player.isOnline()) {
                 return true;
             }
         }
@@ -968,6 +1064,14 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         if (this.isNormal()) {
             lastPlayerLoggedOffTime = System.currentTimeMillis();
         }
+    }
+
+    public void setPayPal(String payPal){
+        this.payPalLink = payPal;
+    }
+
+    public String getPayPal(){
+        return this.payPalLink;
     }
 
     // used when current leader is about to be removed from the faction;
@@ -1017,6 +1121,7 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
                 oldLeader.setRole(Role.COLEADER);
             }
             replacements.get(0).setRole(Role.ADMIN);
+            fPlayerAdmin = replacements.get(0);
             //TODO:TL
             this.msg("<i>Faction admin <h>%s<i> has been removed. %s<i> has been promoted as the new faction admin.", oldLeader == null ? "" : oldLeader.getName(), replacements.get(0).getName());
             FactionsPlugin.getInstance().log("Faction " + this.getTag() + " (" + this.getId() + ") admin was removed. Replacement admin: " + replacements.get(0).getName());
@@ -1050,6 +1155,29 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         }
     }
 
+    @Override
+    public Set<FLocation> getSpawnerChunks() {
+        return spawnerChunks;
+    }
+
+    @Override
+    public void clearSpawnerChunks() {
+        spawnerChunks.clear();
+    }
+
+    @Override
+    public void setSpawnerChunk(FLocation location, boolean value) {
+        if (value)
+            spawnerChunks.add(location);
+        else
+            spawnerChunks.remove(location);
+    }
+
+    @Override
+    public boolean isSpawnerChunk(FLocation location) {
+        return spawnerChunks.contains(location);
+    }
+
     // ----------------------------------------------//
     // Ownership of specific claims
     // ----------------------------------------------//
@@ -1063,9 +1191,6 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
     }
 
     public void clearClaimOwnership(FLocation loc) {
-        if (LWC.getEnabled() && FactionsPlugin.getInstance().conf().lwc().isResetLocksOnUnclaim()) {
-            LWC.clearAllLocks(loc);
-        }
         claimOwnership.remove(loc);
     }
 
@@ -1086,9 +1211,6 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
             ownerData.removeIf(s -> s.equals(player.getId()));
 
             if (ownerData.isEmpty()) {
-                if (LWC.getEnabled() && FactionsPlugin.getInstance().conf().lwc().isResetLocksOnUnclaim()) {
-                    LWC.clearAllLocks(entry.getKey());
-                }
                 claimOwnership.remove(entry.getKey());
             }
         }
@@ -1133,6 +1255,11 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         claimOwnership.put(loc, ownerData);
     }
 
+    public int getMaxTNT(){
+        if(!FactionsPlugin.getInstance().conf().upgrades().isEnabled())return FactionsPlugin.getInstance().conf().commands().tnt().getMaxStorage();
+        return FactionsPlugin.getInstance().conf().upgrades().tnt().getNumber(this.getUpgrade(UpgradeType.TNT));
+    }
+
     public Set<String> getOwnerList(FLocation loc) {
         return claimOwnership.get(loc);
     }
@@ -1174,6 +1301,152 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
         // if no owner list, owner list is empty, or player is in owner list,
         // they're allowed
         return ownerData == null || ownerData.isEmpty() || ownerData.contains(fplayer.getId());
+    }
+
+    //Upgrades
+    public void commitUpgrade(UpgradeType upgradeType){
+        switch(upgradeType){
+            case CHEST:
+                int slots = FactionsPlugin.getInstance().conf().upgrades().chest().getNumber(getUpgrade(upgradeType)) * 9;
+
+                ItemStack[] stacks = this.getChest().getContents();
+
+                List<HumanEntity> viewers = new ArrayList<>(this.getChest().getViewers());
+
+                for(HumanEntity entity : viewers){
+                    entity.closeInventory();
+                }
+
+                Inventory inventory = Bukkit.createInventory(new FChestHolder(), slots,
+                        TextUtil.parseColor(FactionsPlugin.getInstance().conf().upgrades().chest().getChestName()));
+
+                for(int z = 0; z < stacks.length; z++){
+                    inventory.setItem(z, stacks[z]);
+                }
+
+                this.inventory = inventory;
+
+                this.items = ItemBase64.itemStackArrayToBase64(this.inventory.getContents());
+                return;
+        }
+    }
+
+    public Map<UpgradeType, Integer> getUpgrades() {
+        return upgrades;
+    }
+
+    public int getUpgrade(UpgradeType type){
+        return upgrades.getOrDefault(type, 0);
+    }
+
+    public boolean doUpgrade(UpgradeType type, FPlayer user){
+        int maxLevel;
+        int currentLevel;
+        long money;
+        int cost;
+        switch(type){
+            case TNT:
+                maxLevel = FactionsPlugin.getInstance().conf().upgrades().tnt().getLevels().size();
+
+                currentLevel = getUpgrade(type);
+
+                if(currentLevel + 1 > maxLevel){
+                    user.msg(TL.COMMAND_UPGRADE_ALREADY_MAX);
+                    return false;
+                }
+
+                money = (long) Econ.getBalance(user);
+
+                cost = FactionsPlugin.getInstance().conf().upgrades().tnt().getCost(currentLevel + 1);
+
+                if(cost > money){
+                    user.msg(TL.COMMAND_UPGRADE_NOT_ENOUGH);
+                    return false;
+                }
+
+                Econ.withdraw(user, cost);
+
+                user.msg(TL.COMMAND_UPGRADE_SUCCESSFUL, "TNT", currentLevel + 1);
+
+                this.upgrades.put(type, currentLevel + 1);
+                return true;
+            case CHEST:
+                maxLevel = FactionsPlugin.getInstance().conf().upgrades().chest().getLevels().size();
+
+                currentLevel = getUpgrade(type);
+
+                if(currentLevel + 1 > maxLevel){
+                    user.msg(TL.COMMAND_UPGRADE_ALREADY_MAX);
+                    return false;
+                }
+
+                money = (long) Econ.getBalance(user);
+
+                cost = FactionsPlugin.getInstance().conf().upgrades().chest().getCost(currentLevel + 1);
+
+                if(cost > money){
+                    user.msg(TL.COMMAND_UPGRADE_NOT_ENOUGH);
+                    return false;
+                }
+
+                Econ.withdraw(user, cost);
+
+                user.msg(TL.COMMAND_UPGRADE_SUCCESSFUL, "Chest", currentLevel + 1);
+
+                this.upgrades.put(type, currentLevel + 1);
+                return true;
+            case SPAWNER_BOOST:
+                maxLevel = FactionsPlugin.getInstance().conf().upgrades().spawnerBoost().getLevels().size();
+
+                currentLevel = getUpgrade(type);
+
+                if(currentLevel + 1 > maxLevel){
+                    user.msg(TL.COMMAND_UPGRADE_ALREADY_MAX);
+                    return false;
+                }
+
+                money = (long) Econ.getBalance(user);
+
+                cost = FactionsPlugin.getInstance().conf().upgrades().spawnerBoost().getCost(currentLevel + 1);
+
+                if(cost > money){
+                    user.msg(TL.COMMAND_UPGRADE_NOT_ENOUGH);
+                    return false;
+                }
+
+                Econ.withdraw(user, cost);
+
+                user.msg(TL.COMMAND_UPGRADE_SUCCESSFUL, "Spawner Boost", currentLevel + 1);
+
+                this.upgrades.put(type, currentLevel + 1);
+                return true;
+            case CROP_BOOST:
+                maxLevel = FactionsPlugin.getInstance().conf().upgrades().cropBoost().getLevels().size();
+
+                currentLevel = getUpgrade(type);
+
+                if(currentLevel + 1 > maxLevel){
+                    user.msg(TL.COMMAND_UPGRADE_ALREADY_MAX);
+                    return false;
+                }
+
+                money = (long) Econ.getBalance(user);
+
+                cost = FactionsPlugin.getInstance().conf().upgrades().cropBoost().getCost(currentLevel + 1);
+
+                if(cost > money){
+                    user.msg(TL.COMMAND_UPGRADE_NOT_ENOUGH);
+                    return false;
+                }
+
+                Econ.withdraw(user, cost);
+
+                user.msg(TL.COMMAND_UPGRADE_SUCCESSFUL, "Crop Boost", currentLevel + 1);
+
+                this.upgrades.put(type, currentLevel + 1);
+                return true;
+        }
+        return false;
     }
 
     // ----------------------------------------------//

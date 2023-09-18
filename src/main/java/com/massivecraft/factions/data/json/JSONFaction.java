@@ -1,6 +1,7 @@
 package com.massivecraft.factions.data.json;
 
 import com.massivecraft.factions.data.MemoryFaction;
+import org.bukkit.inventory.Inventory;
 
 public class JSONFaction extends MemoryFaction {
 

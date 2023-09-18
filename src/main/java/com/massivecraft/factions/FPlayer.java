@@ -4,6 +4,7 @@ import com.massivecraft.factions.iface.EconomyParticipator;
 import com.massivecraft.factions.perms.Relation;
 import com.massivecraft.factions.perms.Role;
 import com.massivecraft.factions.struct.ChatMode;
+import com.massivecraft.factions.util.SpiralTask;
 import com.massivecraft.factions.util.WarmUpUtil;
 import mkremins.fanciful.FancyMessage;
 import org.bukkit.Location;
@@ -39,6 +40,8 @@ public interface FPlayer extends EconomyParticipator {
 
     boolean willAutoLeave();
 
+    boolean attemptRotateIn();
+
     void setAutoLeave(boolean autoLeave);
 
     long getLastFrostwalkerMessage();
@@ -46,6 +49,10 @@ public interface FPlayer extends EconomyParticipator {
     void setLastFrostwalkerMessage();
 
     void setMonitorJoins(boolean monitor);
+
+    void setInspecting(boolean inspecting);
+
+    boolean isInspecting();
 
     boolean isMonitoringJoins();
 
@@ -217,6 +224,8 @@ public interface FPlayer extends EconomyParticipator {
 
     boolean attemptClaim(Faction forFaction, FLocation location, boolean notifyFailure);
 
+    boolean attemptClaim(Faction forFaction, FLocation location, boolean notifyFailure, SpiralTask spiralTask);
+
     String getId();
 
     Player getPlayer();
@@ -286,4 +295,8 @@ public interface FPlayer extends EconomyParticipator {
     void clearWarmup();
 
     void setOfflinePlayer(Player player);
+
+    boolean isStealth();
+
+    void setStealth(boolean stealth);
 }

@@ -29,6 +29,7 @@ public class DefaultOfflinePermissionsConfig {
                     i.normal = null;
                     i.moderator = null;
                     i.coleader = null;
+                    i.alt = null;
                 } else if (o instanceof DefaultPermissionsConfig.Permissions.FactionOnlyPermInfo) {
                     field.set(offlinePermissions, null);
                 }

@@ -219,6 +219,8 @@ public class ClipPlaceholderAPIManager extends PlaceholderExpansion implements R
                 return String.valueOf(faction.getMaxVaults());
             case "faction_relation_color":
                 return fPlayer.getColorTo(faction).toString();
+            case "faction_strikes":
+                return fPlayer.getFaction() != null ? String.valueOf(fPlayer.getFaction().getStrikes().size()) : "0";
         }
 
         return null;

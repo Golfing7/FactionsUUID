@@ -23,11 +23,15 @@ public class SimpleItem {
     private DyeColor color;
     private boolean enchant;
 
+    private short data;
+
     SimpleItem(Builder builder) {
         this.name = builder.name;
         this.lore = builder.lore;
         this.material = builder.material;
         this.color = builder.color;
+
+        this.data = builder.data;
     }
 
     public SimpleItem(SimpleItem item) {
@@ -35,11 +39,13 @@ public class SimpleItem {
         this.lore = item.lore;
         this.material = item.material;
         this.color = item.color;
+
+        this.data = item.data;
     }
 
     public ItemStack get() {
         if (isValid()) {
-            ItemStack itemStack = new ItemStack(material);
+            ItemStack itemStack = new ItemStack(material, 1, data);
             ItemMeta meta = itemStack.getItemMeta();
 
             if (name != null) {
@@ -137,6 +143,7 @@ public class SimpleItem {
         private String name;
         private List<String> lore;
         private DyeColor color;
+        private short data = 0;
 
         private Builder() {
         }
@@ -158,6 +165,11 @@ public class SimpleItem {
 
         public Builder setMaterial(Material material) {
             this.material = material;
+            return this;
+        }
+
+        public Builder setData(short data) {
+            this.data = data;
             return this;
         }
 

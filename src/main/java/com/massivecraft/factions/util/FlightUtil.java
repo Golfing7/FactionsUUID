@@ -6,6 +6,7 @@ import com.massivecraft.factions.FactionsPlugin;
 import com.massivecraft.factions.perms.Relation;
 import com.massivecraft.factions.struct.Permission;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -22,7 +23,7 @@ public class FlightUtil {
         double enemyCheck = FactionsPlugin.getInstance().conf().commands().fly().getRadiusCheck() * 20;
         if (enemyCheck > 0) {
             enemiesTask = new EnemiesTask();
-            enemiesTask.runTaskTimer(FactionsPlugin.getInstance(), 0, (long) enemyCheck);
+            enemiesTask.runTaskTimerAsynchronously(FactionsPlugin.getInstance(), 0, (long) enemyCheck);
         }
 
         double spawnRate = FactionsPlugin.getInstance().conf().commands().fly().particles().getSpawnRate() * 20;
@@ -47,15 +48,21 @@ public class FlightUtil {
         }
     }
 
-    public class EnemiesTask extends BukkitRunnable {
+    public static class EnemiesTask extends BukkitRunnable {
 
         @Override
         public void run() {
             Collection<FPlayer> players = FPlayers.getInstance().getOnlinePlayers();
             for (Player player : Bukkit.getOnlinePlayers()) {
+                if(Permission.FLY_ANY.has(player.getPlayer()))continue;
+
                 FPlayer pilot = FPlayers.getInstance().getByPlayer(player);
+
+                if(FactionsPlugin.getInstance().getConfigManager().getMainConfig().commands().fly().ignoreDisableInWorlds().contains(player.getWorld().getName()))
+                    continue;
+
                 if (pilot.isFlying() && !pilot.isAdminBypassing()) {
-                    if (enemiesNearby(pilot, FactionsPlugin.getInstance().conf().commands().fly().getEnemyRadius(), players)) {
+                    if (enemiesNearby(pilot, FactionsPlugin.getInstance().conf().commands().fly().getEnemyRadius(), players) && !pilot.getPlayer().hasPermission("essentials.fly")) {
                         pilot.msg(TL.COMMAND_FLY_ENEMY_DISABLE);
                         pilot.setFlying(false);
                         if (pilot.isAutoFlying()) {
@@ -74,15 +81,20 @@ public class FlightUtil {
             if (!FactionsPlugin.getInstance().worldUtil().isEnabled(target.getPlayer().getWorld())) {
                 return false;
             }
+
+            if(target.getPlayer() != null && target.getPlayer().getGameMode() == GameMode.SPECTATOR)
+                return false;
+
             int radiusSquared = radius * radius;
             Location loc = target.getPlayer().getLocation();
-            Location cur = new Location(loc.getWorld(), 0, 0, 0);
+            Location cur;
             for (FPlayer player : players) {
-                if (player == target || player.isAdminBypassing()) {
+                if (player.isStealth() || player == target || (player.getPlayer() != null && Permission.FLY_ANY.has(player.getPlayer())) || player.isAdminBypassing() || (player.getPlayer() != null && player.getPlayer().getGameMode() == GameMode.SPECTATOR)) {
                     continue;
                 }
 
-                player.getPlayer().getLocation(cur);
+                cur = player.getPlayer().getLocation();
+
                 if (cur.getWorld().getUID().equals(loc.getWorld().getUID()) &&
                         cur.distanceSquared(loc) <= radiusSquared &&
                         player.getRelationTo(target) == Relation.ENEMY &&
@@ -94,7 +106,7 @@ public class FlightUtil {
         }
     }
 
-    public class ParticleTrailsTask extends BukkitRunnable {
+    public static class ParticleTrailsTask extends BukkitRunnable {
 
         private final int amount;
         private final float speed;

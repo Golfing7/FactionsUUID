@@ -7,11 +7,13 @@ import com.massivecraft.factions.FPlayers;
 import com.massivecraft.factions.Faction;
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.FactionsPlugin;
+import com.massivecraft.factions.cmd.CommandContext;
 import com.massivecraft.factions.config.file.MainConfig;
 import com.massivecraft.factions.data.MemoryFPlayer;
 import com.massivecraft.factions.event.FPlayerJoinEvent;
 import com.massivecraft.factions.event.FPlayerLeaveEvent;
 import com.massivecraft.factions.gui.GUI;
+import com.massivecraft.factions.integration.Essentials;
 import com.massivecraft.factions.perms.PermissibleAction;
 import com.massivecraft.factions.perms.Relation;
 import com.massivecraft.factions.perms.Role;
@@ -19,16 +21,22 @@ import com.massivecraft.factions.scoreboards.FScoreboard;
 import com.massivecraft.factions.scoreboards.FTeamWrapper;
 import com.massivecraft.factions.scoreboards.sidebar.FDefaultSidebar;
 import com.massivecraft.factions.struct.Permission;
-import com.massivecraft.factions.util.TL;
-import com.massivecraft.factions.util.TextUtil;
-import com.massivecraft.factions.util.VisualizeUtil;
+import com.massivecraft.factions.util.*;
+import com.massivecraft.factions.util.material.MaterialDb;
+import net.coreprotect.CoreProtect;
+import net.coreprotect.CoreProtectAPI;
+import net.minecraft.server.v1_8_R3.Blocks;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.craftbukkit.v1_8_R3.util.CraftMagicNumbers;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -49,10 +57,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.NumberConversions;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 
 
@@ -67,13 +72,81 @@ public class FactionsPlayerListener extends AbstractListener {
         }
     }
 
-    @EventHandler(priority = EventPriority.NORMAL)
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        initPlayer(event.getPlayer());
-        this.plugin.updatesOnJoin(event.getPlayer());
+    private void toggleFlight(FPlayer fPlayer, final boolean toggle) {
+        // If false do nothing besides set
+        if (!toggle) {
+            fPlayer.setFlying(false);
+            return;
+        }
+        // Do checks if true
+        if (!flyTest(fPlayer)) {
+            return;
+        }
+        fPlayer.setFlying(true);
     }
 
-    private void initPlayer(Player player) {
+    private boolean flyTest(FPlayer fPlayer) {
+        //Check for flight not being enabled.
+        if(FlightUtil.instance() == null)
+            return false;
+
+        if(fPlayer.isAdminBypassing())return true;
+
+        if (!fPlayer.canFlyAtLocation()) {
+            return false;
+        } else return !FlightUtil.instance().enemiesNearby
+                (fPlayer, FactionsPlugin
+                        .getInstance()
+                        .conf()
+                        .commands()
+                        .fly()
+                        .getEnemyRadius());
+    }
+
+    private void checkValidLoginLocation(FPlayer fPlayer)
+    {
+        long time = System.currentTimeMillis() - fPlayer.getLastLoginTime() / 60000;
+
+        if(time < FactionsPlugin.getInstance().conf().factions().landRaidControl().logout().getOfflineMinutesSendToSpawn()){
+            return;
+        }
+
+        FLocation fLocation = new FLocation(fPlayer);
+
+        Faction factionAt = Board.getInstance().getFactionAt(fLocation);
+
+        if(factionAt.isSafeZone() || factionAt.isWarZone() || factionAt.isWilderness())return;
+
+        Relation relationToLocation = fPlayer.getRelationToLocation();
+
+        if(FactionsPlugin.getInstance().conf().factions().landRaidControl().logout().getSendToSpawnRelations().contains(relationToLocation.name()) &&
+                !fPlayer.isAdminBypassing()){
+            new BukkitRunnable(){
+                @Override
+                public void run(){
+                    fPlayer.getPlayer().teleport(FactionsPlugin.getInstance().getConfigManager().getMainConfig().exploits().spawnLocation());
+                }
+            }.runTask(FactionsPlugin.getInstance());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        FPlayer fPlayer = initPlayer(event.getPlayer());
+        this.plugin.updatesOnJoin(event.getPlayer());
+
+        checkValidLoginLocation(fPlayer);
+
+        if (Permission.FLY_AUTO.has(event.getPlayer(), false)) {
+            fPlayer.setAutoFlying(true);
+            toggleFlight(fPlayer, true);
+        }else {
+            //Make sure it was disabled if they don't have permission for it.
+            fPlayer.setAutoFlying(false);
+        }
+    }
+
+    private FPlayer initPlayer(Player player) {
         // Make sure that all online players do have a fplayer.
         final FPlayer me = FPlayers.getInstance().getByPlayer(player);
         ((MemoryFPlayer) me).setName(player.getName());
@@ -101,6 +174,7 @@ public class FactionsPlayerListener extends AbstractListener {
         if (plugin.worldUtil().isEnabled(player.getWorld())) {
             this.initFactionWorld(me);
         }
+        return me;
     }
 
     private void initFactionWorld(FPlayer me) {
@@ -132,7 +206,7 @@ public class FactionsPlayerListener extends AbstractListener {
         // If they have the permission, don't let them autoleave. Bad inverted setter :\
         me.setAutoLeave(!me.getPlayer().hasPermission(Permission.AUTO_LEAVE_BYPASS.node));
         me.setTakeFallDamage(true);
-        if (plugin.conf().commands().fly().isEnable() && me.isFlying()) { // TODO allow flight to continue
+        if (plugin.conf().commands().fly().isEnable() && me.isFlying() && !me.getPlayer().hasPermission("essentials.fly")) { // TODO allow flight to continue
             me.setFlying(false);
         }
 
@@ -246,15 +320,16 @@ public class FactionsPlayerListener extends AbstractListener {
         Faction factionTo = Board.getInstance().getFactionAt(to);
         boolean changedFaction = (factionFrom != factionTo);
 
-        free: if (plugin.conf().commands().fly().isEnable() && !me.isAdminBypassing()) {
+        free: if (plugin.conf().commands().fly().isEnable() && !me.isAdminBypassing() && !Permission.FLY_ANY.has(player)) {
             boolean canFly = me.canFlyInFactionTerritory(factionTo);
+            boolean canEssentialsFly = me.getPlayer().hasPermission("essentials.fly");
             if (!changedFaction){
-                if (canFly && !canFlyPreClaim && me.isFlying() && plugin.conf().commands().fly().isDisableFlightDuringAutoclaim()) {
+                if (canFly && !canFlyPreClaim && me.isFlying() && plugin.conf().commands().fly().isDisableFlightDuringAutoclaim() && !canEssentialsFly) {
                     me.setFlying(false);
                 }
                 break free;
             }
-            if (me.isFlying() && !canFly) {
+            if (me.isFlying() && !canFly && !canEssentialsFly) {
                 me.setFlying(false);
             } else if (me.isAutoFlying() && !me.isFlying() && canFly) {
                 me.setFlying(true);
@@ -515,14 +590,22 @@ public class FactionsPlayerListener extends AbstractListener {
     public void onTeleport(PlayerTeleportEvent event) {
         FPlayer me = FPlayers.getInstance().getByPlayer(event.getPlayer());
         boolean isEnabled = plugin.worldUtil().isEnabled(event.getTo().getWorld());
+        if(event.getCause() == PlayerTeleportEvent.TeleportCause.COMMAND ||
+                event.getCause() == PlayerTeleportEvent.TeleportCause.UNKNOWN ||
+                event.getCause() == PlayerTeleportEvent.TeleportCause.PLUGIN){
+            if(!Essentials.handleDefaultTeleport(event.getPlayer(), event.getTo())){
+                event.setCancelled(true);
+                return;
+            }
+        }
         if (!isEnabled) {
             FScoreboard.remove(me, event.getPlayer());
-            if (me.isFlying()) {
+            if (me.isFlying() && !me.getPlayer().hasPermission("essentials.fly")) {
                 me.setFlying(false);
             }
             return;
         }
-        if (!event.getFrom().getWorld().equals(event.getTo().getWorld()) && !plugin.worldUtil().isEnabled(event.getPlayer().getWorld())) {
+        if (event.getFrom().getWorld() != null && !event.getFrom().getWorld().equals(event.getTo().getWorld()) && !plugin.worldUtil().isEnabled(event.getPlayer().getWorld())) {
             FactionsPlugin.getInstance().getLandRaidControl().update(me);
             this.initFactionWorld(me);
         }
@@ -531,7 +614,7 @@ public class FactionsPlayerListener extends AbstractListener {
         me.setLastStoodAt(to);
 
         // Check the location they're teleporting to and check if they can fly there.
-        if (plugin.conf().commands().fly().isEnable() && !me.isAdminBypassing()) {
+        if (plugin.conf().commands().fly().isEnable() && !me.isAdminBypassing() && !event.getPlayer().hasPermission("essentials.fly")) {
             boolean canFly = me.canFlyAtLocation(to);
             if (me.isFlying() && !canFly) {
                 me.setFlying(false, false);
@@ -647,11 +730,107 @@ public class FactionsPlayerListener extends AbstractListener {
         return false;
     }
 
+    public void handleChestClick(InventoryClickEvent event){
+        if(event.getSlot() < 0)return;
+        FPlayer fPlayer = FPlayers.getInstance().getById(event.getWhoClicked().getUniqueId().toString());
+        if(fPlayer != null && fPlayer.isAdminBypassing())return;
+        Inventory openInv = event.getWhoClicked().getOpenInventory().getTopInventory();
+
+        Inventory bottomInventory = event.getWhoClicked().getOpenInventory().getBottomInventory();
+
+        if(!(openInv.getHolder() instanceof FChestHolder))return;
+
+        if(!FactionsPlugin.getInstance().getConfigManager().getMainConfig().upgrades().chest().preventSpawnersInChest())return;
+
+        if(event.getClick() == ClickType.NUMBER_KEY){
+            ItemStack keyedItem = event.getWhoClicked().getInventory().getItem(event.getHotbarButton());
+
+            if(keyedItem != null && keyedItem.getType() == MaterialDb.get("MOB_SPAWNER")){
+                event.setCancelled(true);
+                event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+                return;
+            }
+
+            /*if(openInv.getSize() > event.getRawSlot()){
+                ItemStack rawTop = openInv.getItem(event.getRawSlot());
+
+                if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
+                    event.setCancelled(true);
+                    event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+                    return;
+                }
+            }
+
+            if(openInv.getSize() > event.getSlot()){
+                ItemStack rawTop = openInv.getItem(event.getSlot());
+
+                if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
+                    event.setCancelled(true);
+                    event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+                    return;
+                }
+            }
+
+            if(bottomInventory.getSize() > event.getRawSlot()){
+                ItemStack rawTop = bottomInventory.getItem(event.getRawSlot());
+
+                if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
+                    event.setCancelled(true);
+                    event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+                    return;
+                }
+            }
+
+            if(bottomInventory.getSize() > event.getSlot()){
+                ItemStack rawTop = bottomInventory.getItem(event.getSlot());
+
+                if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
+                    event.setCancelled(true);
+                    event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+                    return;
+                }
+            }*/
+        }
+
+        if(event.getCurrentItem() != null && event.getCurrentItem().getType() == MaterialDb.get("MOB_SPAWNER")){
+            event.setCancelled(true);
+            event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+            return;
+        }
+
+        if(event.getCursor() != null && event.getCursor().getType() == MaterialDb.get("MOB_SPAWNER")){
+            event.setCancelled(true);
+            event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+            return;
+        }
+
+        if(openInv.getSize() > event.getSlot()){
+            ItemStack rawTop = openInv.getItem(event.getSlot());
+
+            if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
+                event.setCancelled(true);
+                event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+                return;
+            }
+        }
+
+        if(bottomInventory.getSize() > event.getSlot()){
+            ItemStack rawTop = bottomInventory.getItem(event.getSlot());
+
+            if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
+                event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+                event.setCancelled(true);
+            }
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteractGUI(InventoryClickEvent event) {
         if (!plugin.worldUtil().isEnabled(event.getWhoClicked().getWorld())) {
             return;
         }
+
+        handleChestClick(event);
 
         Inventory clickedInventory = getClickedInventory(event);
         if (clickedInventory == null) {
@@ -728,7 +907,92 @@ public class FactionsPlayerListener extends AbstractListener {
                 plugin.getLogger().info("[PLAYER_COMMAND] " + event.getPlayer().getName() + ": " + event.getMessage());
             }
             event.setCancelled(true);
+        }else if(FactionsPlugin.getInstance().conf().commands().fly().isInterceptFlyCommand() &&
+                !event.getPlayer().hasPermission("essentials.fly") &&
+                (event.getMessage().startsWith("/fly ") || event.getMessage().equalsIgnoreCase("/fly") ||
+                event.getMessage().startsWith("/efly ") || event.getMessage().equalsIgnoreCase("/efly"))){
+            event.setCancelled(true);
+
+            event.getPlayer().performCommand("f fly");
         }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onInteract(PlayerInteractEvent event){
+        if(!event.getAction().toString().contains("BLOCK"))return;
+
+        if(event.getPlayer().getGameMode() == GameMode.SPECTATOR)
+            return;
+
+        FPlayer fPlayer = FPlayers.getInstance().getByPlayer(event.getPlayer());
+
+        if(fPlayer == null || !fPlayer.isInspecting())return;
+
+        if(!fPlayer.hasFaction())return;
+
+        if(event.getClickedBlock() == null)return;
+
+        Block requestedBlock = event.getAction() == Action.LEFT_CLICK_BLOCK ? event.getClickedBlock() : event.getClickedBlock().getRelative(event.getBlockFace());
+
+        if(Board.getInstance().getFactionAt(new FLocation(requestedBlock)) != fPlayer.getFaction()){
+            fPlayer.msg(TL.INSPECT_CANT_THERE);
+            return;
+        }
+
+        List<String[]> info = getCoreProtectData(requestedBlock);
+
+        event.setCancelled(true);
+
+        if(info.size() == 0){
+            fPlayer.msg(TL.INSPECT_NODATA);
+            return;
+        }
+
+        ((MemoryFPlayer) fPlayer).setAllCurrentInspectData(info);
+        ((MemoryFPlayer) fPlayer).setCurrentInspectLocation(requestedBlock.getLocation());
+
+        for(int i = 0; i < 10 && i < info.size(); i++){
+            String[] strings = info.get(i);
+            Object[] vars = new Object[] {i + 1,
+                    strings[1],
+                    calcTime(Long.parseLong(strings[0])),
+                    CraftMagicNumbers.getMaterial(CraftMagicNumbers.getBlock(Integer.parseInt(strings[5]))).name().toLowerCase(),
+                    intToAction(Integer.parseInt(strings[7]), Integer.parseInt(strings[6]))};
+            fPlayer.msg(TL.INSPECT_FORMAT, vars);
+        }
+    }
+
+    private String intToAction(int action, int subAction){
+        if(subAction == 3){
+            switch (action){
+                case 1:
+                    return "Deposited";
+                case 2:
+                    return "Withdrew";
+            }
+        }
+        switch (action){
+            case 0:
+                return "Break";
+            case 1:
+                return "Place";
+            case 2:
+                return "Interact";
+            case 3:
+                return "Chest Transaction";
+        }
+        return "";
+    }
+
+    private String calcTime(long timeThen){
+        long l = System.currentTimeMillis() / 1000L;
+        long timeNow = l - timeThen;
+
+        return TimeFormat.timeFormattedNoSecondsExtended((int) (timeNow / 60), true);
+    }
+
+    private List<String[]> getCoreProtectData(Block block){
+        return CoreProtect.getInstance().getAPI().blockLookup(block, Integer.MAX_VALUE);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

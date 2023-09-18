@@ -1,10 +1,6 @@
 package com.massivecraft.factions.cmd;
 
-import com.massivecraft.factions.cmd.tnt.CmdTNTDeposit;
-import com.massivecraft.factions.cmd.tnt.CmdTNTFill;
-import com.massivecraft.factions.cmd.tnt.CmdTNTInfo;
-import com.massivecraft.factions.cmd.tnt.CmdTNTSiphon;
-import com.massivecraft.factions.cmd.tnt.CmdTNTWithdraw;
+import com.massivecraft.factions.cmd.tnt.*;
 import com.massivecraft.factions.struct.Permission;
 import com.massivecraft.factions.util.TL;
 
@@ -14,13 +10,15 @@ public class CmdTNT extends FCommand {
     public CmdTNT() {
         super();
         this.aliases.add("tnt");
-        this.aliases.add("trinitrotoluene");
+        // All this does is bloat the help message. Why was it even added?
+//        this.aliases.add("trinitrotoluene");
 
         this.addSubCommand(this.infoCmd = new CmdTNTInfo());
         this.addSubCommand(new CmdTNTFill());
         this.addSubCommand(new CmdTNTDeposit());
         this.addSubCommand(new CmdTNTWithdraw());
         this.addSubCommand(new CmdTNTSiphon());
+        this.addSubCommand(new CmdTNTAdminSet());
 
         this.requirements = new CommandRequirements.Builder(Permission.TNT_INFO).memberOnly().build();
     }
@@ -28,7 +26,7 @@ public class CmdTNT extends FCommand {
     @Override
     public void perform(CommandContext context) {
         context.commandChain.add(this);
-        this.infoCmd.execute(context);
+        FCmdRoot.getInstance().cmdAutoHelp.execute(context);
     }
 
     @Override

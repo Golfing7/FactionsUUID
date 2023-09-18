@@ -10,6 +10,7 @@ import com.massivecraft.factions.data.MemoryFaction;
 import com.massivecraft.factions.data.MemoryFactions;
 import com.massivecraft.factions.util.DiscUtil;
 import com.massivecraft.factions.util.UUIDFetcher;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +53,7 @@ public class JSONFactions extends MemoryFactions {
     public void forceSave(boolean sync) {
         final Map<String, JSONFaction> entitiesThatShouldBeSaved = new HashMap<>();
         for (Faction entity : this.factions.values()) {
+            ((MemoryFaction) entity).setItems();
             entitiesThatShouldBeSaved.put(entity.getId(), (JSONFaction) entity);
         }
 

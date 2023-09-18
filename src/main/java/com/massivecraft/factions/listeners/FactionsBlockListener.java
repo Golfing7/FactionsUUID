@@ -11,6 +11,8 @@ import com.massivecraft.factions.perms.PermissibleAction;
 import com.massivecraft.factions.perms.Relation;
 import com.massivecraft.factions.struct.Permission;
 import com.massivecraft.factions.util.TL;
+import com.massivecraft.factions.util.UpgradeType;
+import com.massivecraft.factions.util.material.MaterialDb;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -20,16 +22,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDamageEvent;
-import org.bukkit.event.block.BlockFromToEvent;
-import org.bukkit.event.block.BlockPistonExtendEvent;
-import org.bukkit.event.block.BlockPistonRetractEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.block.EntityBlockFormEvent;
+import org.bukkit.event.block.*;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class FactionsBlockListener implements Listener {
@@ -70,6 +67,9 @@ public class FactionsBlockListener implements Listener {
         if (!plugin.worldUtil().isEnabled(event.getBlock().getWorld())) {
             return;
         }
+
+        if(event.getToBlock().getLocation().getZ() == event.getBlock().getLocation().getZ() &&
+        event.getToBlock().getLocation().getX() == event.getBlock().getLocation().getX())return;
 
         if (!FactionsPlugin.getInstance().conf().exploits().isLiquidFlow()) {
             return;
@@ -177,6 +177,45 @@ public class FactionsBlockListener implements Listener {
         }
     }
 
+    private static Material spawnerMaterial;
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onSpawnerPlace(BlockPlaceEvent event) {
+        if(spawnerMaterial == null) {
+            spawnerMaterial = Material.getMaterial("MOB_SPAWNER");
+            if(spawnerMaterial == null) {
+                spawnerMaterial = Material.getMaterial("SPAWNER"); //Newer version support.
+            }
+        }
+
+        FLocation fLocation = new FLocation(event.getBlock());
+        Faction factionAt = Board.getInstance().getFactionAt(fLocation);
+        FPlayer fPlayer = FPlayers.getInstance().getByPlayer(event.getPlayer());
+        if(fPlayer.isAdminBypassing())
+            return;
+
+        if (factionAt != null && !factionAt.isWilderness() &&
+                FactionsPlugin.getInstance().getConfigManager().getMainConfig().factions().spawning().isForceSpawnersToBePlacedInSpawnerChunks()) {
+            FLocation chunkFLoc = new FLocation(event.getBlock().getChunk());
+            if (!factionAt.isSpawnerChunk(chunkFLoc)) {
+                fPlayer.msg(TL.SPAWNERS_CANTPLACEOUTSIDESPAWNERCHUNKS);
+                event.setCancelled(true);
+                return;
+            }
+        }
+
+        if(FactionsPlugin.getInstance().getConfigManager().getMainConfig().factions().spawning().isAllowSpawnerPlacementInWild()
+                || event.getBlock().getType() != spawnerMaterial)
+            return;
+
+        //Get the faction at the location.
+        if(factionAt == null || !factionAt.isWilderness())
+            return;
+
+        event.setCancelled(true);
+        fPlayer.msg(TL.SPAWNERS_CANTPLACEINWILD);
+    }
+
     private boolean canPistonMoveBlock(Faction pistonFaction, List<Block> blocks, BlockFace direction) {
         String world = blocks.get(0).getWorld().getName();
         List<Faction> factions = (direction == null ? blocks.stream() : blocks.stream().map(b -> b.getRelative(direction)))
@@ -204,7 +243,7 @@ public class FactionsBlockListener implements Listener {
                 return false;
             }
             Relation rel = pistonFaction.getRelationTo(otherFaction);
-            if (!otherFaction.hasAccess(otherFaction.hasPlayersOnline(), rel, PermissibleAction.BUILD)) {
+            if (!otherFaction.hasAccess((!FactionsPlugin.getInstance().conf().onlineChecks().doOnlineChecks() || otherFaction.hasPlayersOnline()), rel, PermissibleAction.BUILD)) {
                 return false;
             }
         }
@@ -234,6 +273,47 @@ public class FactionsBlockListener implements Listener {
         // Check if they have build permissions here. If not, block this from happening.
         if (!playerCanBuildDestroyBlock(player, location, PermissibleAction.FROSTWALK, justCheck)) {
             event.setCancelled(true);
+        }
+    }
+
+    private static Material SUGAR_CANE_BLOCK;
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onGrow(BlockGrowEvent e){
+        if(SUGAR_CANE_BLOCK == null){
+            SUGAR_CANE_BLOCK = MaterialDb.get("SUGAR_CANE");
+        }
+
+        if(!FactionsPlugin.getInstance().conf().upgrades().cropBoost().isEnabled())return;
+
+        int i;
+
+        for (i = 1; e.getBlock().getRelative(BlockFace.DOWN, i).getType() == SUGAR_CANE_BLOCK; ++i) {
+            ;
+        }
+
+        if(i >= 3)return;
+
+        FLocation fLocation = new FLocation(e.getBlock());
+
+        Faction factionAt = Board.getInstance().getFactionAt(fLocation);
+
+        if(factionAt.isWilderness())return;
+
+        int upgrade = factionAt.getUpgrade(UpgradeType.CROP_BOOST);
+
+        if(upgrade <= 0 && FactionsPlugin.getInstance().conf().upgrades().spawnerBoost().getDefaultBoost() == 0.0D)return;
+
+        double boost = FactionsPlugin.getInstance().conf().upgrades().cropBoost().getNumber(upgrade);
+
+        float randomFloat = ThreadLocalRandom.current().nextFloat();
+
+        if(boost >= randomFloat){
+            Block relative = e.getBlock().getRelative(BlockFace.UP);
+
+            if(relative.getType() == Material.AIR){
+                relative.setType(SUGAR_CANE_BLOCK, false);
+            }
         }
     }
 

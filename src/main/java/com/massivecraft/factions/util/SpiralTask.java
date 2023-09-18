@@ -5,6 +5,7 @@ import com.massivecraft.factions.FactionsPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.logging.Level;
 
@@ -22,7 +23,7 @@ import java.util.logging.Level;
  * [7][<][<][<][<][<][<][7]
  */
 
-public abstract class SpiralTask implements Runnable {
+public abstract class SpiralTask extends BukkitRunnable {
 
     // general task-related reference data
     private final transient World world;
@@ -37,6 +38,8 @@ public abstract class SpiralTask implements Runnable {
     private transient boolean isNeg = false;
     private transient int length = -1;
     private transient int current = 0;
+
+    protected transient int timeout = 10;
 
     @SuppressWarnings("LeakingThisInConstructor")
     public SpiralTask(FLocation fLocation, int radius) {
@@ -56,7 +59,27 @@ public abstract class SpiralTask implements Runnable {
         this.readyToGo = true;
 
         // get this party started
-        this.setTaskID(Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(FactionsPlugin.getInstance(), this, 2, 2));
+        this.runTaskTimer(FactionsPlugin.getInstance(), 0, 1);
+
+        this.setTaskID(this.getTaskId());
+    }
+
+    //This constructor is used so we can set the task ID in a sub-class
+    public SpiralTask(FLocation fLocation, int radius, int dummymarker) {
+        // limit is determined based on spiral leg length for given radius; see insideRadius()
+        this.limit = (radius - 1) * 2;
+
+        this.world = Bukkit.getWorld(fLocation.getWorldName());
+        if (this.world == null) {
+            FactionsPlugin.getInstance().log(Level.WARNING, "[SpiralTask] A valid world must be specified!");
+            this.stop();
+            return;
+        }
+
+        this.x = (int) fLocation.getX();
+        this.z = (int) fLocation.getZ();
+
+        this.readyToGo = true;
     }
 
     /*
@@ -65,6 +88,10 @@ public abstract class SpiralTask implements Runnable {
      * Return false if the entire task needs to be aborted, otherwise return true to continue.
      */
     public abstract boolean work();
+
+    public void stopTooSoon(){
+        this.stop();
+    }
 
     /*
      * Returns an FLocation pointing at the current chunk X and Z values.
@@ -122,7 +149,7 @@ public abstract class SpiralTask implements Runnable {
         long loopStartTime = now();
 
         // keep going until the task has been running for 20ms or more, then stop to take a breather
-        while (now() < loopStartTime + 20) {
+        while (now() < loopStartTime + timeout) {
             // run the primary task on the current X/Z coordinates
             if (!this.work()) {
                 this.finish();
@@ -184,6 +211,7 @@ public abstract class SpiralTask implements Runnable {
     // for successful completion
     public void finish() {
 //		P.getInstance().log("SpiralTask successfully completed!");
+
         this.stop();
     }
 

@@ -1,16 +1,21 @@
 package com.massivecraft.factions.config.file;
 
+import com.google.common.collect.Lists;
 import com.massivecraft.factions.FactionsPlugin;
 import com.massivecraft.factions.config.annotation.Comment;
 import com.massivecraft.factions.config.annotation.WipeOnReload;
+import com.massivecraft.factions.gui.SimpleItem;
+import com.massivecraft.factions.perms.Relation;
 import com.massivecraft.factions.perms.Role;
 import com.massivecraft.factions.util.MiscUtil;
+import com.massivecraft.factions.util.TextUtil;
 import com.massivecraft.factions.util.material.MaterialDb;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.dynmap.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +41,15 @@ public class MainConfig {
         public boolean isDebug() {
             return debug;
         }
+    }
+
+    public class Corner {
+        private int diameterClaim = 25;
+        public int diameterClaim(){return diameterClaim;}
+        private boolean overrideOtherClaims = true;
+        public boolean overrideOtherClaims(){return overrideOtherClaims;}
+        private boolean onlyAllowInSOTW = true;
+        public boolean onlyAllowInSOTW(){return onlyAllowInSOTW;}
     }
 
     public class Colors {
@@ -134,6 +148,20 @@ public class MainConfig {
     }
 
     public class Commands {
+        public class Disband {
+            private boolean confirmGUI = true;
+
+            public boolean isConfirmGUI() {
+                return confirmGUI;
+            }
+        }
+
+        public class Unclaimall {
+            private boolean confirmGUI = true;
+
+            public boolean isConfirmGUI() {return confirmGUI;}
+        }
+
         public class Fly {
             public class Particles {
                 @Comment("Speed of the particles, can be decimal value")
@@ -165,6 +193,8 @@ public class MainConfig {
                     "how long (in seconds) should they not take fall damage for?\n" +
                     "Set to 0 to have them always take fall damage.")
             private int fallDamageCooldown = 3;
+            @Comment("This will intercept the default /fly command for those without essentials.fly and parse it to /f fly.")
+            private boolean interceptFlyCommand = true;
             @Comment("From how far away a player can disable another's flight by being enemy\n" +
                     "Set to 0 if wanted disable\n" +
                     "Note: Will produce lag at higher numbers")
@@ -174,13 +204,15 @@ public class MainConfig {
             @Comment("Should we disable flight if the player has suffered generic damage")
             private boolean disableOnGenericDamage = false;
             @Comment("Should flight be disabled if the player has hurt mobs?")
-            private boolean disableOnHurtingMobs = true;
+            private boolean disableOnHurtingMobs = false;
             @Comment("Should flight be disabled if the player has hurt players?")
             private boolean disableOnHurtingPlayers = true;
             @Comment("Should players lose flight status while autoclaiming into territory they cannot fly in?")
             private boolean disableFlightDuringAutoclaim = false;
             @Comment("Should flight be disabled if the player is hurt by mobs?")
-            private boolean disableOnHurtByMobs = true;
+            private boolean disableOnHurtByMobs = false;
+            @Comment("Ignores these worlds when doing flight disabling.")
+            private List<String> ignoreDisableInWorlds = Lists.newArrayList("example1", "example2");
 
             @Comment("Trails show below the players foot when flying, faction.fly.trails\n" +
                     "Players can enable them with /f trail on/off\n" +
@@ -215,6 +247,10 @@ public class MainConfig {
                 return disableOnHurtingMobs;
             }
 
+            public boolean isInterceptFlyCommand() {
+                return interceptFlyCommand;
+            }
+
             public boolean isDisableOnHurtingPlayers() {
                 return disableOnHurtingPlayers;
             }
@@ -227,9 +263,29 @@ public class MainConfig {
                 return disableOnHurtByMobs;
             }
 
+            public List<String> ignoreDisableInWorlds(){
+                return ignoreDisableInWorlds;
+            }
+
             public Particles particles() {
                 return particles;
             }
+        }
+
+        public class Corner {
+            @Comment("Total length of claim down the line")
+            private int maxClaimLength = 25;
+
+            @Comment("This will override ANY existing claim that the faction encounters while doing /f corner")
+            private boolean overrideClaims = true;
+
+
+        }
+
+        public class Strike {
+            private boolean broadcastStrikes = false;
+
+            public boolean broadcastStrikes(){return broadcastStrikes;}
         }
 
         public class Help {
@@ -406,6 +462,7 @@ public class MainConfig {
                     this.add("<a>Allies(<i>{allies}<a>/<i>{max-allies}<a>): {allies-list} ");
                     this.add("<a>Online: (<i>{online}<a>/<i>{members}<a>): {online-list}");
                     this.add("<a>Offline: (<i>{offline}<a>/<i>{members}<a>): {offline-list}");
+                    this.add("<a>Alts: (<i>{alts}<a>): {alt-list}");
                 }
             };
             @Comment("Set true to not display empty fancy messages")
@@ -449,7 +506,7 @@ public class MainConfig {
         }
 
         public class TNT {
-            private boolean enable = false;
+            private boolean enable = true;
             @Comment("Maximum storage. Set to -1 (or lower) to disable")
             private int maxStorage = -1;
             private int maxRadius = 5;
@@ -520,6 +577,15 @@ public class MainConfig {
             }
         }
 
+        public class Roster {
+            @Comment("This is including faction space, so 5 faction size + 5 extra players on roster, 10 combined")
+            private int rosterCap = 10;
+
+            public int rosterCap(){
+                return rosterCap;
+            }
+        }
+
         private Fly fly = new Fly();
         private Help help = new Help();
         private Home home = new Home();
@@ -530,13 +596,26 @@ public class MainConfig {
         private SeeChunk seeChunk = new SeeChunk();
         private Show show = new Show();
         private Stuck stuck = new Stuck();
+        private Disband disband = new Disband();
+        private Unclaimall unclaimall = new Unclaimall();
         @Comment("TNT bank!")
         private TNT tnt = new TNT();
         private ToolTips toolTips = new ToolTips();
         private Warp warp = new Warp();
+        private Strike strike = new Strike();
+
+        private Roster roster = new Roster();
+
+        public Strike strike(){return strike;}
+
+        public Disband disband(){return disband;}
 
         public Fly fly() {
             return fly;
+        }
+
+        public Roster roster(){
+            return roster;
         }
 
         public Help help() {
@@ -586,6 +665,8 @@ public class MainConfig {
         public Warp warp() {
             return warp;
         }
+
+        public Unclaimall unclaimall() {return unclaimall;}
     }
 
     public class Factions {
@@ -802,11 +883,34 @@ public class MainConfig {
                 }
             }
 
+            public class Logout
+            {
+                @Comment("Sends players to spawn after being offline for X minutes in another player's territory (configurable as well).")
+                private int offlineMinutesSendToSpawn = 0;
+                @Comment("The relations that will send the player to spawn when being offline.")
+                private List<String> sendToSpawnRelations = new ArrayList<String>() {
+                    {
+                        this.add("ENEMY");
+                        this.add("NEUTRAL");
+                    }
+                };
+
+                public int getOfflineMinutesSendToSpawn() {
+                    return offlineMinutesSendToSpawn;
+                }
+
+                public List<String> getSendToSpawnRelations() {
+                    return sendToSpawnRelations;
+                }
+            }
+
             @Comment("Sets the mode of land/raid control")
             private String system = "power";
             private DTR dtr = new DTR();
             @Comment("Controls the power system of land/raid control\nSet the 'system' value to 'power' to use this system")
             private Power power = new Power();
+
+            private Logout logout = new Logout();
 
             public String getSystem() {
                 return system;
@@ -819,6 +923,8 @@ public class MainConfig {
             public Power power() {
                 return power;
             }
+
+            public Logout logout(){return logout;}
         }
 
         public class Prefix {
@@ -827,6 +933,7 @@ public class MainConfig {
             private String mod = "*";
             private String normal = "+";
             private String recruit = "-";
+            private String alt = "~";
 
             public String getAdmin() {
                 return admin;
@@ -846,6 +953,10 @@ public class MainConfig {
 
             public String getRecruit() {
                 return recruit;
+            }
+
+            public String getAlt() {
+                return alt;
             }
         }
 
@@ -1132,6 +1243,8 @@ public class MainConfig {
             private int lineClaimLimit = 5;
             private int fillClaimMaxClaims = 25;
             private int fillClaimMaxDistance = 5;
+            @Comment("The max radius a player can claim, this is overrided for admins but must be confirmed if a higher value is used")
+            private int maxRadiusClaim = 20;
             @Comment("If someone is doing a radius claim and the process fails to claim land this many times in a row, it will exit")
             private int radiusClaimFailureLimit = 9;
             private Set<String> worldsNoClaiming = new HashSet<String>() {
@@ -1165,6 +1278,10 @@ public class MainConfig {
 
             public int getBufferZone() {
                 return bufferZone;
+            }
+
+            public int getMaxRadiusClaim() {
+                return maxRadiusClaim;
             }
 
             public boolean isMustBeConnected() {
@@ -1627,6 +1744,10 @@ public class MainConfig {
             @Comment("If true, FactionsUUID will automatically add in its new defaults such as\n" +
                     "adding new friendly mobs to the safe zone exception list")
             private boolean updateAutomatically = true;
+            @Comment("If set to false, will prevent all spawner placement in wilderness.")
+            private boolean allowSpawnerPlacementInWild = true;
+            @Comment("If set to true, this will force players to place spawners in their own spawner chunks")
+            private boolean forceSpawnersToBePlacedInSpawnerChunks = false;
 
             public boolean isUpdateAutomatically() {
                 return updateAutomatically;
@@ -1686,6 +1807,14 @@ public class MainConfig {
                     preventSpawningInWildernessExceptionsType = MiscUtil.typeSetFromStringSet(preventSpawningInWildernessExceptions, MiscUtil.ENTITY_TYPE_FUNCTION);
                 }
                 return preventSpawningInWildernessExceptionsType;
+            }
+
+            public boolean isAllowSpawnerPlacementInWild() {
+                return allowSpawnerPlacementInWild;
+            }
+
+            public boolean isForceSpawnersToBePlacedInSpawnerChunks() {
+                return forceSpawnersToBePlacedInSpawnerChunks;
             }
         }
 
@@ -1758,6 +1887,12 @@ public class MainConfig {
             @Comment("When faction membership hits this limit, players will no longer be able to join using /f join; default is 0, no limit")
             private int factionMemberLimit = 0;
 
+            private int maxAlts = 15;
+
+            public int maxAlts(){
+                return this.maxAlts;
+            }
+
             @Comment("What faction ID to start new players in when they first join the server; default is 0, \"no faction\"")
             private String newPlayerStartingFactionID = "0";
 
@@ -1817,6 +1952,15 @@ public class MainConfig {
 
             public String getDefaultRelation() {
                 return defaultRelation;
+            }
+
+            public transient Relation actualDefaultRelation = null;
+
+            public Relation getDefaultRelationActual() {
+                if(actualDefaultRelation == null){
+                    actualDefaultRelation = Relation.fromString(defaultRelation);
+                }
+                return actualDefaultRelation;
             }
 
             public Role getDefaultRole() {
@@ -2078,6 +2222,13 @@ public class MainConfig {
         private boolean tntWaterlog = false;
         private boolean liquidFlow = false;
         private boolean preventDuping = true;
+        private boolean sendPlayersToSpawnAfter5MinsOffline = true;
+        private double spawnX = 0;
+        private double spawnY = 75;
+        private double spawnZ = 0;
+        private float yaw = 0.0F;
+        private float pitch = 0.0F;
+        private String spawnWorld = "world";
 
         public boolean isObsidianGenerators() {
             return obsidianGenerators;
@@ -2102,6 +2253,14 @@ public class MainConfig {
         public boolean doPreventDuping() {
             return preventDuping;
         }
+
+        public boolean sendPlayersToSpawnAfter5MinsOffline(){return sendPlayersToSpawnAfter5MinsOffline;}
+
+        public double spawnX(){return spawnX;}
+        public double spawnY(){return spawnY;}
+        public double spawnZ(){return spawnZ;}
+        public String spawnWorld(){return spawnWorld;}
+        public Location spawnLocation(){return new Location(Bukkit.getWorld(spawnWorld), spawnX, spawnY, spawnZ, yaw, pitch);}
     }
 
     public class Economy {
@@ -2550,6 +2709,489 @@ public class MainConfig {
         }
     }
 
+    public class Upgrades {
+        private boolean enabled = true;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public class TnT {
+            private boolean enabled = true;
+
+            private int defaultTnT = 100000;
+
+            @Comment("This list follows the format of (PRICE):(TNT). The order of the list is crucial as it dictates the level.")
+            private List<String> levels = new ArrayList<String>(){
+                {
+                    this.add("50000:500000");
+                    this.add("100000:1000000");
+                    this.add("1000000:10000000");
+                }
+            };
+
+            public int getCost(int level){
+                if(level <= 0 || levels.size() == 0 || levels.size() < level)return -1;
+
+                String[] costs = levels.get(level - 1).split(":");
+
+                return Integer.parseInt(costs[0]);
+            }
+
+            public int getNumber(int level){
+                if(level <= 0)return getDefaultTnT();
+
+                if(levels.size() == 0 || levels.size() < level)return -1;
+
+                String[] costs = levels.get(level - 1).split(":");
+
+                return Integer.parseInt(costs[1]);
+            }
+
+            public List<String> getLevels() {
+                return levels;
+            }
+
+            private Item item = new Item();
+
+            public boolean isEnabled(){
+                return this.enabled;
+            }
+
+            public int getDefaultTnT() {
+                return defaultTnT;
+            }
+
+            public Item item(){
+                return item;
+            }
+
+            public class Item {
+                private String type = "TNT";
+
+                private String name = "&c&lTnT Bank Upgrade";
+
+                private int slot = 6;
+
+                private int damage = 0;
+
+                public int getSlot() {
+                    return slot;
+                }
+
+                private List<String> lore = new ArrayList<String>(){
+                    {
+                        this.add("&7");
+                        this.add("&d* &eLevel 1");
+                        this.add("&ePrice: &a${PRICE_1}");
+                        this.add("&eAmount: &c{AMOUNT_1}");
+                        this.add("&7");
+                        this.add("&d* &eLevel 2");
+                        this.add("&ePrice: &a${PRICE_2}");
+                        this.add("&eAmount: &c{AMOUNT_2}");
+                        this.add("&7");
+                        this.add("&d* &eLevel 3");
+                        this.add("&ePrice: &a${PRICE_3}");
+                        this.add("&eAmount: &c{AMOUNT_3}");
+                        this.add("&7");
+                        this.add("&7Current Level: &d&n{LEVEL}");
+                    }
+                };
+
+                public SimpleItem getItem(){
+                    return SimpleItem.builder().setMaterial(Material.valueOf(type))
+                            .setData((short) damage)
+                            .setLore(lore)
+                            .setName(TextUtil.parseColor(name))
+                            .build();
+                }
+            }
+        }
+
+        public class Chest {
+            private boolean enabled = true;
+
+            private int defaultRows = 1;
+
+            private boolean preventSpawnersInChest = true;
+
+            private String chestName = "&eFaction Chest";
+
+            @Comment("This list follows the format of (PRICE):(ROWS). The order of the list is crucial as it dictates the level.")
+            private List<String> levels = new ArrayList<String>(){
+                {
+                    this.add("50000:4");
+                    this.add("100000:5");
+                    this.add("1000000:6");
+                }
+            };
+
+            public int getCost(int level){
+                if(level <= 0 || levels.size() == 0 || levels.size() < level)return -1;
+
+                String[] costs = levels.get(level - 1).split(":");
+
+                return Integer.parseInt(costs[0]);
+            }
+
+            public boolean preventSpawnersInChest(){
+                return preventSpawnersInChest;
+            }
+
+            public int getNumber(int level){
+                if(level <= 0)return getDefaultRows();
+
+                if(levels.size() == 0 || levels.size() < level)return -1;
+
+                String[] costs = levels.get(level - 1).split(":");
+
+                return Integer.parseInt(costs[1]);
+            }
+
+            public List<String> getLevels() {
+                return levels;
+            }
+
+            private Item item = new Item();
+
+            public boolean isEnabled(){
+                return this.enabled;
+            }
+
+            public String getChestName() {
+                return chestName;
+            }
+
+            public int getDefaultRows() {
+                return defaultRows;
+            }
+
+            public Item item(){
+                return item;
+            }
+
+            public class Item {
+                private String type = "CHEST";
+
+                private String name = "&e&lChest Upgrade";
+
+                private int slot = 5;
+
+                private int damage = 0;
+
+                public int getSlot() {
+                    return slot;
+                }
+
+                private List<String> lore = new ArrayList<String>(){
+                    {
+                        this.add("&7");
+                        this.add("&d* &eLevel 1");
+                        this.add("&ePrice: &a${PRICE_1}");
+                        this.add("&eAmount: &c{AMOUNT_1}");
+                        this.add("&7");
+                        this.add("&d* &eLevel 2");
+                        this.add("&ePrice: &a${PRICE_2}");
+                        this.add("&eAmount: &c{AMOUNT_2}");
+                        this.add("&7");
+                        this.add("&d* &eLevel 3");
+                        this.add("&ePrice: &a${PRICE_3}");
+                        this.add("&eAmount: &c{AMOUNT_3}");
+                        this.add("&7");
+                        this.add("&7Current Level: &d&n{LEVEL}");
+                    }
+                };
+
+                public SimpleItem getItem(){
+                    return SimpleItem.builder().setMaterial(Material.valueOf(type))
+                            .setData((short) damage)
+                            .setLore(lore)
+                            .setName(TextUtil.parseColor(name))
+                            .build();
+                }
+            }
+        }
+
+        public class SpawnerBoost {
+            private boolean enabled = true;
+
+            private double defaultBoost = 1;
+
+            @Comment("This list follows the format of (PRICE):(Boost in decimal). The order of the list is crucial as it dictates the level.")
+            private List<String> levels = new ArrayList<String>(){
+                {
+                    this.add("250000:1.1");
+                    this.add("500000:1.2");
+                    this.add("1000000:1.3");
+                }
+            };
+
+            public int getCost(int level){
+                if(level <= 0 || levels.size() == 0 || levels.size() < level)return -1;
+
+                String[] costs = levels.get(level - 1).split(":");
+
+                return Integer.parseInt(costs[0]);
+            }
+
+            public double getNumber(int level){
+                if(level <= 0)return getDefaultBoost();
+
+                if(levels.size() == 0 || levels.size() < level)return -1;
+
+                String[] costs = levels.get(level - 1).split(":");
+
+                return Double.parseDouble(costs[1]);
+            }
+
+            public List<String> getLevels() {
+                return levels;
+            }
+
+            private Item item = new Item();
+
+            public boolean isEnabled(){
+                return this.enabled;
+            }
+
+            public double getDefaultBoost() {
+                return defaultBoost;
+            }
+
+            public Item item(){
+                return item;
+            }
+
+            public class Item {
+                private String type = "MOB_SPAWNER";
+
+                private String name = "&1&lSpawner Boost";
+
+                private int slot = 2;
+
+                private int damage = 0;
+
+                public int getSlot() {
+                    return slot;
+                }
+
+                private List<String> lore = new ArrayList<String>(){
+                    {
+                        this.add("&7");
+                        this.add("&d* &eLevel 1");
+                        this.add("&ePrice: &a${PRICE_1}");
+                        this.add("&eAmount: &c{AMOUNT_1}");
+                        this.add("&7");
+                        this.add("&d* &eLevel 2");
+                        this.add("&ePrice: &a${PRICE_2}");
+                        this.add("&eAmount: &c{AMOUNT_2}");
+                        this.add("&7");
+                        this.add("&d* &eLevel 3");
+                        this.add("&ePrice: &a${PRICE_3}");
+                        this.add("&eAmount: &c{AMOUNT_3}");
+                        this.add("&7");
+                        this.add("&7Current Level: &d&n{LEVEL}");
+                    }
+                };
+
+                public SimpleItem getItem(){
+                    return SimpleItem.builder().setMaterial(MaterialDb.get(type))
+                            .setData((short) damage)
+                            .setLore(lore)
+                            .setName(TextUtil.parseColor(name))
+                            .build();
+                }
+            }
+        }
+
+        public class CropBoost {
+            private boolean enabled = true;
+
+            private double defaultBoost = 0;
+
+            @Comment("This list follows the format of (PRICE):(Chance to double grow). The order of the list is crucial as it dictates the level.")
+            private List<String> levels = new ArrayList<String>(){
+                {
+                    this.add("250000:0.5");
+                    this.add("500000:0.6");
+                    this.add("1000000:0.7");
+                }
+            };
+
+            public int getCost(int level){
+                if(level <= 0 || levels.size() == 0 || levels.size() < level)return -1;
+
+                String[] costs = levels.get(level - 1).split(":");
+
+                return Integer.parseInt(costs[0]);
+            }
+
+            public double getNumber(int level){
+                if(level <= 0)return getDefaultBoost();
+
+                if(levels.size() == 0 || levels.size() < level)return -1;
+
+                String[] costs = levels.get(level - 1).split(":");
+
+                return Double.parseDouble(costs[1]);
+            }
+
+            public List<String> getLevels() {
+                return levels;
+            }
+
+            private Item item = new Item();
+
+            public boolean isEnabled(){
+                return this.enabled;
+            }
+
+            public double getDefaultBoost() {
+                return defaultBoost;
+            }
+
+            public Item item(){
+                return item;
+            }
+
+            public class Item {
+                private String type = "SUGAR_CANE";
+
+                private String name = "&2&lCrop Boost";
+
+                private int slot = 3;
+
+                private int damage = 0;
+
+                public int getSlot() {
+                    return slot;
+                }
+
+                private List<String> lore = new ArrayList<String>(){
+                    {
+                        this.add("&7");
+                        this.add("&d* &eLevel 1");
+                        this.add("&ePrice: &a${PRICE_1}");
+                        this.add("&eAmount: &c{AMOUNT_1}");
+                        this.add("&7");
+                        this.add("&d* &eLevel 2");
+                        this.add("&ePrice: &a${PRICE_2}");
+                        this.add("&eAmount: &c{AMOUNT_2}");
+                        this.add("&7");
+                        this.add("&d* &eLevel 3");
+                        this.add("&ePrice: &a${PRICE_3}");
+                        this.add("&eAmount: &c{AMOUNT_3}");
+                        this.add("&7");
+                        this.add("&7Current Level: &d&n{LEVEL}");
+                    }
+                };
+
+                public SimpleItem getItem(){
+                    return SimpleItem.builder().setMaterial(Material.valueOf(type))
+                            .setData((short) damage)
+                            .setLore(lore)
+                            .setName(TextUtil.parseColor(name))
+                            .build();
+                }
+            }
+        }
+
+        public class Filler {
+            private String type = "STAINED_GLASS_PANE";
+
+            private String name = "&7";
+
+            private int damage = 7;
+
+            private List<String> lore = new ArrayList<>();
+
+            public SimpleItem getItem(){
+                return SimpleItem.builder().setMaterial(Material.valueOf(type))
+                        .setData((short) damage)
+                        .setLore(lore)
+                        .setName(TextUtil.parseColor(name))
+                        .build();
+            }
+        }
+
+        private Filler filler = new Filler();
+
+        private CropBoost cropBoost = new CropBoost();
+
+        public CropBoost cropBoost(){
+            return this.cropBoost;
+        }
+
+        public Filler filler(){return this.filler;}
+
+        private TnT tnt = new TnT();
+
+        public TnT tnt(){
+            return tnt;
+        }
+
+        private Chest chest = new Chest();
+
+        public Chest chest(){
+            return chest;
+        }
+
+        private SpawnerBoost spawnerBoost = new SpawnerBoost();
+
+        public SpawnerBoost spawnerBoost(){
+            return this.spawnerBoost;
+        }
+
+        private String guiTitle = "&c&lFaction Upgrades";
+
+        public String guiTitle(){return guiTitle;}
+
+        public class GUI {
+            private int rows = 1;
+
+            public int getRows() {
+                return rows;
+            }
+
+            public Filler filler(){
+                return filler;
+            }
+
+            public class Filler {
+                private String type = "STAINED_GLASS_PANE";
+
+                private String name = "&7";
+
+                private int slot = 0;
+
+                private int damage = 7;
+
+                private List<String> lore = new ArrayList<>();
+
+                public ItemStack getItem(){
+                    ItemStack itemStack = new ItemStack(Material.valueOf(type), 1, (short) damage);
+
+                    ItemMeta itemMeta = itemStack.getItemMeta();
+
+                    itemMeta.setDisplayName(TextUtil.parseColor(name));
+
+                    itemMeta.setLore(lore);
+
+                    itemStack.setItemMeta(itemMeta);
+                    return itemStack;
+                }
+            }
+
+            private Filler filler = new Filler();
+        }
+
+        private GUI gui = new GUI();
+
+        public GUI gui(){
+            return this.gui;
+        }
+    }
+
     public class LWC {
         private boolean enabled = true;
         private boolean resetLocksOnUnclaim = false;
@@ -2624,6 +3266,9 @@ public class MainConfig {
         }
     };
 
+    @Comment("The time zone to use when dealing with timely matters")
+    private String timeZone = "America/New_York";
+
     @Comment("FactionsUUID by drtshock\n" +
             "Support and documentation https://factions.support\n" +
             "Updates https://www.spigotmc.org/resources/factionsuuid.1035/\n" +
@@ -2633,8 +3278,10 @@ public class MainConfig {
 
     @Comment("Colors for relationships and default factions")
     private Colors colors = new Colors();
+    private Corner corner = new Corner();
     private Commands commands = new Commands();
     private Factions factions = new Factions();
+    private Upgrades upgrades = new Upgrades();
     @Comment("What should be logged?")
     private Logging logging = new Logging();
     @Comment("Controls certain exploit preventions")
@@ -2663,8 +3310,26 @@ public class MainConfig {
     private WorldGuard worldGuard = new WorldGuard();
     private WorldBorder worldBorder = new WorldBorder();
 
+    private OnlineChecks onlineChecks = new OnlineChecks();
+
+    public class OnlineChecks {
+        @Comment("Dictates whether we will use the hasOnlinePlayers method in block breaks.\n" +
+                "This will improve performance a small amount if set to false")
+        private boolean doOnlineChecks = false;
+
+        public boolean doOnlineChecks(){
+            return doOnlineChecks;
+        }
+    }
+
+    public Corner corner(){return corner;}
+
     public List<String> getCommandBase() {
         return commandBase == null ? (commandBase = Collections.singletonList("f")) : commandBase;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
     }
 
     public AVeryFriendlyFactionsConfig getaVeryFriendlyFactionsConfig() {
@@ -2687,6 +3352,10 @@ public class MainConfig {
         return logging;
     }
 
+    public Upgrades upgrades(){
+        return upgrades;
+    }
+
     public Exploits exploits() {
         return exploits;
     }
@@ -2698,6 +3367,8 @@ public class MainConfig {
     public MapSettings map() {
         return map;
     }
+
+    public OnlineChecks onlineChecks(){return onlineChecks;}
 
     public RestrictWorlds restrictWorlds() {
         return restrictWorlds;

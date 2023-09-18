@@ -30,6 +30,7 @@ public class ConfigManager {
         this.loadConfig("default_permissions", this.permissionsConfig);
         this.loadConfig("default_permissions_offline", this.offlinePermissionsConfig);
         this.loadConfig("main", this.mainConfig);
+        this.mainConfig.factions().other().actualDefaultRelation = null;
         this.loadConfig("dynmap", this.dynmapConfig);
     }
 

@@ -15,17 +15,11 @@ import com.massivecraft.factions.integration.Econ;
 import com.massivecraft.factions.integration.Essentials;
 import com.massivecraft.factions.integration.IWorldguard;
 import com.massivecraft.factions.integration.IntegrationManager;
-import com.massivecraft.factions.integration.LWC;
 import com.massivecraft.factions.integration.LuckPerms;
 import com.massivecraft.factions.integration.dynmap.EngineDynmap;
 import com.massivecraft.factions.integration.permcontext.ContextManager;
 import com.massivecraft.factions.landraidcontrol.LandRaidControl;
-import com.massivecraft.factions.listeners.FactionsBlockListener;
-import com.massivecraft.factions.listeners.FactionsChatListener;
-import com.massivecraft.factions.listeners.FactionsEntityListener;
-import com.massivecraft.factions.listeners.FactionsExploitListener;
-import com.massivecraft.factions.listeners.FactionsPlayerListener;
-import com.massivecraft.factions.listeners.OneEightPlusListener;
+import com.massivecraft.factions.listeners.*;
 import com.massivecraft.factions.listeners.versionspecific.PortalHandler;
 import com.massivecraft.factions.listeners.versionspecific.PortalListenerLegacy;
 import com.massivecraft.factions.listeners.versionspecific.PortalListener_114;
@@ -51,7 +45,6 @@ import com.massivecraft.factions.util.material.MaterialDb;
 import com.massivecraft.factions.util.particle.BukkitParticleProvider;
 import com.massivecraft.factions.util.particle.PacketParticleProvider;
 import com.massivecraft.factions.util.particle.ParticleProvider;
-import io.papermc.lib.PaperLib;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -125,6 +118,16 @@ public class FactionsPlugin extends JavaPlugin implements FactionsAPI {
     private boolean autoSave = true;
     private boolean loadSuccessful = false;
 
+    private boolean isSOTW = false;
+
+    public void setSOTW(boolean on){
+        isSOTW = on;
+    }
+
+    public boolean isSOTW() {
+        return isSOTW;
+    }
+
     // Some utils
     private Persist persist;
     private TextUtil txt;
@@ -177,6 +180,8 @@ public class FactionsPlugin extends JavaPlugin implements FactionsAPI {
     private String startupLog;
     private String startupExceptionLog;
     private final List<RuntimeException> grumpyExceptions = new ArrayList<>();
+
+    public FCmdRoot cmdBase;
 
     public FactionsPlugin() {
         instance = this;
@@ -340,7 +345,7 @@ public class FactionsPlugin extends JavaPlugin implements FactionsAPI {
         FactionsPlugin.getInstance().getLogger().info("Loaded " + loadedPlayers + " players in " + loadedFactions + " factions with " + loadedClaims + " claims");
 
         // Add Base Commands
-        FCmdRoot cmdBase = new FCmdRoot();
+        cmdBase = new FCmdRoot();
 
         ContextManager.init(this);
         if (getServer().getPluginManager().getPlugin("PermissionsEx") != null) {
@@ -388,6 +393,14 @@ public class FactionsPlugin extends JavaPlugin implements FactionsAPI {
         getServer().getPluginManager().registerEvents(new FactionsBlockListener(this), this);
         if (mcVersion >= 800) {
             getServer().getPluginManager().registerEvents(new OneEightPlusListener(this), this);
+        }
+
+        try{
+            Class.forName("net.techcable.tacospigot.event.entity.SpawnerPreSpawnEvent");
+
+            getServer().getPluginManager().registerEvents(new FactionsSpawnerBoostListener(this), this);
+        }catch(ClassNotFoundException exc){
+            Bukkit.getLogger().severe("[Factions] - Not able to register spawner boost listener as you are not using taco spigot!");
         }
 
         // Version specific portal listener check.
@@ -486,18 +499,6 @@ public class FactionsPlugin extends JavaPlugin implements FactionsAPI {
         if (ess != null) {
             this.metricsSimplePie("essentials_delete_homes", () -> "" + conf().factions().other().isDeleteEssentialsHomes());
             this.metricsSimplePie("essentials_home_teleport", () -> "" + this.conf().factions().homes().isTeleportCommandEssentialsIntegration());
-        }
-
-        // LWC
-        Plugin lwc = LWC.getLWC();
-        this.metricsDrillPie("lwc", () -> this.metricsPluginInfo(lwc));
-        if (lwc != null) {
-            boolean enabled = conf().lwc().isEnabled();
-            this.metricsSimplePie("lwc_integration", () -> "" + enabled);
-            if (enabled) {
-                this.metricsSimplePie("lwc_reset_locks_unclaim", () -> "" + conf().lwc().isResetLocksOnUnclaim());
-                this.metricsSimplePie("lwc_reset_locks_capture", () -> "" + conf().lwc().isResetLocksOnCapture());
-            }
         }
 
         // Vault
@@ -712,10 +713,10 @@ public class FactionsPlugin extends JavaPlugin implements FactionsAPI {
     }
 
     public void updatesOnJoin(Player player) {
-        if (this.updateMessage != null && player.hasPermission(com.massivecraft.factions.struct.Permission.UPDATES.toString())) {
+        /*if (this.updateMessage != null && player.hasPermission(com.massivecraft.factions.struct.Permission.UPDATES.toString())) {
             player.sendMessage(this.updateMessage);
             player.sendMessage(ChatColor.GREEN + "Get it at " + ChatColor.DARK_AQUA + "https://www.spigotmc.org/resources/factionsuuid.1035/");
-        }
+        }*/
     }
 
     public PermUtil getPermUtil() {
@@ -884,6 +885,10 @@ public class FactionsPlugin extends JavaPlugin implements FactionsAPI {
                 .registerTypeAdapter(LazyLocation.class, new MyLocationTypeAdapter())
                 .registerTypeAdapter(mapFLocToStringSetType, new MapFLocToStringSetTypeAdapter())
                 .registerTypeAdapterFactory(EnumTypeAdapter.ENUM_FACTORY);
+    }
+
+    public static String version(){
+        return Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
     }
 
     @Override
@@ -1093,10 +1098,6 @@ public class FactionsPlugin extends JavaPlugin implements FactionsAPI {
     }
 
     public CompletableFuture<Boolean> teleport(Player player, Location location) {
-        if (this.conf().paper().isAsyncTeleport()) {
-            return PaperLib.teleportAsync(player, location, PlayerTeleportEvent.TeleportCause.PLUGIN);
-        } else {
-            return CompletableFuture.completedFuture(player.teleport(location, PlayerTeleportEvent.TeleportCause.PLUGIN));
-        }
+        return CompletableFuture.completedFuture(player.teleport(location, PlayerTeleportEvent.TeleportCause.PLUGIN));
     }
 }
