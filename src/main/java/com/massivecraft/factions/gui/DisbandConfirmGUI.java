@@ -48,7 +48,7 @@ public class DisbandConfirmGUI extends GUI<Boolean>{
     @Override
     protected void onClick(Boolean action, ClickType clickType) {
         final Player player = user.getPlayer();
-        if(!action || user.getFaction() != forFaction){
+        if(!action){
             new BukkitRunnable(){
                 @Override
                 public void run(){
