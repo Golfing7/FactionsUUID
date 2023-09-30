@@ -42,7 +42,6 @@ public class IntegrationManager implements Listener {
         MAGIC("Magic", (p) -> Magic.init(p)), // RESIST THE URGE TO REPLACE WITH LAMBDA REFERENCE
         PLACEHOLDERAPI("PlaceholderAPI", (p) -> FactionsPlugin.getInstance().setupPlaceholderAPI()),
         PLACEHOLDERAPI_OTHER("MVdWPlaceholderAPI", (p) -> FactionsPlugin.getInstance().setupOtherPlaceholderAPI()),
-        SENTINEL("Sentinel", (p) -> Sentinel.init(p)), // RESIST THE URGE TO REPLACE WITH LAMBDA REFERENCE
         WORLDGUARD("WorldGuard", (plugin) -> {
             FactionsPlugin f = FactionsPlugin.getInstance();
             if (!f.conf().worldGuard().isChecking() && !f.conf().worldGuard().isBuildPriority()) {

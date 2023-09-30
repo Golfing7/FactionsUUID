@@ -101,7 +101,8 @@
             <groupId>com.sk89q.worldedit</groupId>
             <artifactId>worldedit-bukkit</artifactId>
             <version>6.1.1-SNAPSHOT</version>
-            <scope>provided</scope>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../../locallibs/WorldEdit-6.1.1.jar</systemPath>
             <exclusions>
                 <exclusion>
                     <artifactId>bukkit</artifactId>
@@ -157,7 +158,8 @@
             <groupId>com.sk89q.worldedit</groupId>
             <artifactId>worldedit-core</artifactId>
             <version>6.1.1-SNAPSHOT</version>
-            <scope>provided</scope>
+            <systemPath>${project.basedir}/../../locallibs/WorldEdit-6.1.1.jar</systemPath>
+            <scope>system</scope>
             <exclusions>
                 <exclusion>
                     <artifactId>bukkit</artifactId>
