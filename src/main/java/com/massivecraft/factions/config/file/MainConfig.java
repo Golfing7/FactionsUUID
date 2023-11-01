@@ -799,6 +799,7 @@ public class MainConfig {
                         this.add("exampleWorld");
                     }
                 };
+                private boolean overrideNoPowerLossWorldsInWarzone = true;
                 private boolean peacefulMembersDisablePowerLoss = true;
                 private boolean warZonePowerLoss = true;
                 private boolean wildernessPowerLoss = true;
@@ -813,6 +814,8 @@ public class MainConfig {
                         "This resets on each death but does not accumulate.\n" +
                         "Set to 0 for no freeze. Time is in seconds.")
                 private int powerFreeze = 0;
+
+                public boolean isOverrideNoPowerLossWorldsInWarzone() {return overrideNoPowerLossWorldsInWarzone;}
 
                 public boolean isRaidability() {
                     return raidability;

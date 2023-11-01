@@ -96,7 +96,12 @@ public class PowerControl implements LandRaidControl {
                 powerLossEvent.setCancelled(true);
             }
             if (FactionsPlugin.getInstance().conf().factions().landRaidControl().power().getWorldsNoPowerLoss().contains(player.getWorld().getName())) {
-                powerLossEvent.setMessage(TL.PLAYER_POWER_LOSS_WARZONE.toString());
+                if (FactionsPlugin.getInstance().conf().factions().landRaidControl().power().isOverrideNoPowerLossWorldsInWarzone()) {
+                    powerLossEvent.setMessage(TL.PLAYER_POWER_LOSS_WARZONE.toString());
+                } else {
+                    powerLossEvent.setMessage(TL.PLAYER_POWER_NOLOSS_WORLD.toString());
+                    powerLossEvent.setCancelled(true);
+                }
             }
         } else if (faction.isWilderness() && !FactionsPlugin.getInstance().conf().factions().landRaidControl().power().isWildernessPowerLoss() && !FactionsPlugin.getInstance().conf().factions().protection().getWorldsNoWildernessProtection().contains(player.getWorld().getName())) {
             powerLossEvent.setMessage(TL.PLAYER_POWER_NOLOSS_WILDERNESS.toString());
