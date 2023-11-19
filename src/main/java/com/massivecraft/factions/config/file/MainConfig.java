@@ -2817,6 +2817,7 @@ public class MainConfig {
             private int defaultRows = 1;
 
             private boolean preventSpawnersInChest = true;
+            private boolean preventShulkerBoxesInChest = true;
 
             private String chestName = "&eFaction Chest";
 
@@ -2871,6 +2872,10 @@ public class MainConfig {
 
             public Item item(){
                 return item;
+            }
+
+            public boolean preventShulkerBoxesInChest() {
+                return preventShulkerBoxesInChest;
             }
 
             public class Item {

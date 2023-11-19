@@ -745,60 +745,20 @@ public class FactionsPlayerListener extends AbstractListener {
         if(event.getClick() == ClickType.NUMBER_KEY){
             ItemStack keyedItem = event.getWhoClicked().getInventory().getItem(event.getHotbarButton());
 
-            if(keyedItem != null && keyedItem.getType() == MaterialDb.get("MOB_SPAWNER")){
+            if(keyedItem != null && (keyedItem.getType() == MaterialDb.get("MOB_SPAWNER") || keyedItem.getType().name().contains("SHULKER_BOX"))){
                 event.setCancelled(true);
                 event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
                 return;
             }
-
-            /*if(openInv.getSize() > event.getRawSlot()){
-                ItemStack rawTop = openInv.getItem(event.getRawSlot());
-
-                if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
-                    event.setCancelled(true);
-                    event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
-                    return;
-                }
-            }
-
-            if(openInv.getSize() > event.getSlot()){
-                ItemStack rawTop = openInv.getItem(event.getSlot());
-
-                if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
-                    event.setCancelled(true);
-                    event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
-                    return;
-                }
-            }
-
-            if(bottomInventory.getSize() > event.getRawSlot()){
-                ItemStack rawTop = bottomInventory.getItem(event.getRawSlot());
-
-                if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
-                    event.setCancelled(true);
-                    event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
-                    return;
-                }
-            }
-
-            if(bottomInventory.getSize() > event.getSlot()){
-                ItemStack rawTop = bottomInventory.getItem(event.getSlot());
-
-                if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
-                    event.setCancelled(true);
-                    event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
-                    return;
-                }
-            }*/
         }
 
-        if(event.getCurrentItem() != null && event.getCurrentItem().getType() == MaterialDb.get("MOB_SPAWNER")){
+        if(event.getCurrentItem() != null && (event.getCurrentItem().getType() == MaterialDb.get("MOB_SPAWNER") || event.getCurrentItem().getType().name().contains("SHULKER_BOX"))){
             event.setCancelled(true);
             event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
             return;
         }
 
-        if(event.getCursor() != null && event.getCursor().getType() == MaterialDb.get("MOB_SPAWNER")){
+        if(event.getCursor() != null && (event.getCursor().getType() == MaterialDb.get("MOB_SPAWNER") || event.getCursor().getType().name().contains("SHULKER_BOX"))){
             event.setCancelled(true);
             event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
             return;
@@ -807,7 +767,7 @@ public class FactionsPlayerListener extends AbstractListener {
         if(openInv.getSize() > event.getSlot()){
             ItemStack rawTop = openInv.getItem(event.getSlot());
 
-            if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
+            if(rawTop != null && (rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER")) || rawTop.getType().name().contains("SHULKER_BOX"))){
                 event.setCancelled(true);
                 event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
                 return;
@@ -817,7 +777,7 @@ public class FactionsPlayerListener extends AbstractListener {
         if(bottomInventory.getSize() > event.getSlot()){
             ItemStack rawTop = bottomInventory.getItem(event.getSlot());
 
-            if(rawTop != null && rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER"))){
+            if(rawTop != null && (rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER")) || rawTop.getType().name().contains("SHULKER_BOX"))){
                 event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
                 event.setCancelled(true);
             }
