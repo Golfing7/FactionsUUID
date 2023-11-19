@@ -2281,6 +2281,8 @@ public class MainConfig {
                 " or any other situation where the player's world is unknown.\n\n" +
                 "Note that you should set up your per-world plugin to treat all your Factions worlds as one group/world.")
         private String defaultWorld = "world";
+        @Comment("The maximum balance a faction can hold")
+        private double maximumBalance = 1000000000;
         private double costClaimWilderness = 30.0;
         private double costClaimFromFactionBonus = 30.0;
         private double overclaimRewardMultiplier = 0.0;
@@ -2340,6 +2342,10 @@ public class MainConfig {
 
         public String getUniverseAccount() {
             return universeAccount;
+        }
+
+        public double getMaximumBalance() {
+            return maximumBalance;
         }
 
         public double getCostClaimWilderness() {

@@ -189,6 +189,13 @@ public class Econ {
             return false;
         }
 
+        // Check if the new balance is over the original balance cap.
+        if (FactionsPlugin.getInstance().getConfigManager().getMainConfig().economy().getMaximumBalance() > 0 &&
+                getBalance(toAcc) + amount > FactionsPlugin.getInstance().getConfigManager().getMainConfig().economy().getMaximumBalance()) {
+            invoker.msg(TL.ECON_OVER_BAL_CAP_INTERNAL, amount);
+            return false;
+        }
+
         // Transfer money
 
         if (withdraw(fromAcc, amount)) {

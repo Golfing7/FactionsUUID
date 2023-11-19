@@ -878,6 +878,7 @@ public enum TL {
     ECON_FORMAT("###,###.###"),
     ECON_DISABLED("Faction econ is disabled."),
     ECON_OVER_BAL_CAP("&4The amount &e%s &4is over Essentials' balance cap."),
+    ECON_OVER_BAL_CAP_INTERNAL("&4The amount &e%s &4is over the balance cap."),
     ECON_BALANCE("&6%s's&e balance is &d%s&e."),
     ECON_NOPERM("&d%s&e lacks permission to control &d%s's&e money."),
     ECON_CANTAFFORD_TRANSFER("&d%s<b> can't afford to transfer &d%s<b> to %s<b>."),
