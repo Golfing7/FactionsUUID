@@ -286,6 +286,9 @@ public class FactionsBlockListener implements Listener {
 
         if(!FactionsPlugin.getInstance().conf().upgrades().cropBoost().isEnabled())return;
 
+        if (e.getBlock().getType() != SUGAR_CANE_BLOCK)
+            return;
+
         int i;
 
         for (i = 1; e.getBlock().getRelative(BlockFace.DOWN, i).getType() == SUGAR_CANE_BLOCK; ++i) {
@@ -302,7 +305,7 @@ public class FactionsBlockListener implements Listener {
 
         int upgrade = factionAt.getUpgrade(UpgradeType.CROP_BOOST);
 
-        if(upgrade <= 0 && FactionsPlugin.getInstance().conf().upgrades().spawnerBoost().getDefaultBoost() == 0.0D)return;
+        if(upgrade <= 0 && FactionsPlugin.getInstance().conf().upgrades().cropBoost().getDefaultBoost() == 0.0D)return;
 
         double boost = FactionsPlugin.getInstance().conf().upgrades().cropBoost().getNumber(upgrade);
 
