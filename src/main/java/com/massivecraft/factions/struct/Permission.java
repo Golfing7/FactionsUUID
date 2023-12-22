@@ -3,6 +3,11 @@ package com.massivecraft.factions.struct;
 import com.massivecraft.factions.FactionsPlugin;
 import org.bukkit.command.CommandSender;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
 public enum Permission {
     MANAGE_SAFE_ZONE("managesafezone"),
     MANAGE_WAR_ZONE("managewarzone"),
@@ -135,9 +140,19 @@ public enum Permission {
     DEBUG("debug");
 
     public final String node;
+    private final Map<String, Function<CommandSender, Boolean>> permissionHandlers = new HashMap<>();
+
 
     Permission(final String node) {
         this.node = "factions." + node;
+    }
+
+    public void registerPermissionHandler(String key, Function<CommandSender, Boolean> function) {
+        this.permissionHandlers.put(key, function);
+    }
+
+    public void unregisterPermissionHandler(String key) {
+        this.permissionHandlers.remove(key);
     }
 
     @Override
@@ -146,6 +161,14 @@ public enum Permission {
     }
 
     public boolean has(CommandSender sender, boolean informSenderIfNot) {
+        for (Function<CommandSender, Boolean> function : this.permissionHandlers.values()) {
+            Boolean result = function.apply(sender);
+            if (result == null)
+                continue;
+
+            return result;
+        }
+
         return FactionsPlugin.getInstance().getPermUtil().has(sender, this.node, informSenderIfNot);
     }
 
