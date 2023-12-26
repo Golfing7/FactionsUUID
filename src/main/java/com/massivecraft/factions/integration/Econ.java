@@ -423,7 +423,7 @@ public class Econ {
 
     public static String getFriendlyBalance(FPlayer player) {
         OfflinePlayer p;
-        if ((p = player.getPlayer()) == null) {
+        if ((p = player.getOfflinePlayer()) == null) {
             return "0";
         }
         return format.format(getBalance(p));
