@@ -39,7 +39,8 @@ public class CmdTNTSiphon extends FCommand {
             return;
         }
 
-        if (FactionsPlugin.getInstance().conf().commands().tnt().isAboveMaxStorage(context.faction.getTNTBank() + 1)) {
+        int factionMaxTnT = context.faction.getMaxTNT();
+        if (context.faction.getTNTBank() + 1 > factionMaxTnT) {
             context.msg(TL.COMMAND_TNT_SIPHON_FAIL_FULL);
             return;
         }
