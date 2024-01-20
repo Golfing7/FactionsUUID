@@ -1195,19 +1195,19 @@ public abstract class MemoryFPlayer implements FPlayer {
     }
 
     public boolean canFlyAtLocation(FLocation location) {
+        if (getPlayer() != null && getPlayer().getAllowFlight()) {
+            boolean worldIgnored = FactionsPlugin.getInstance().getConfigManager().getMainConfig().commands()
+                    .fly().ignoreDisableInWorlds().contains(getPlayer().getLocation().getWorld().getName());
+            if (worldIgnored)
+                return true;
+        }
+
         return (getPlayer() != null && getPlayer().getGameMode() == GameMode.SPECTATOR) ||
                 (this.canFlyInFactionTerritory(Board.getInstance().getFactionAt(location)) && !CombatTagPlusIntegration.playerIsInCombat(UUID.fromString(this.id)));
     }
 
     public boolean canFlyInFactionTerritory(Faction faction) {
         if(this.getPlayer() != null && Permission.FLY_ANY.has(this.getPlayer()))
-            return true;
-
-        if (faction.getRelationTo(this).isAtLeast(Relation.ENEMY) && Permission.FLY_ENEMY.has(this.getPlayer()))
-            return true;
-
-        //Check neutral permission.
-        if(faction.getRelationTo(this).isAtLeast(Relation.NEUTRAL) && Permission.FLY_NEUTRAL.has(this.getPlayer()))
             return true;
 
         if (faction.isWilderness()) {
@@ -1217,6 +1217,13 @@ public abstract class MemoryFPlayer implements FPlayer {
         } else if (faction.isWarZone()) {
             return Permission.FLY_WARZONE.has(getPlayer());
         }
+
+        if (faction.getRelationTo(this).isAtLeast(Relation.ENEMY) && Permission.FLY_ENEMY.has(this.getPlayer()))
+            return true;
+
+        //Check neutral permission.
+        if(faction.getRelationTo(this).isAtLeast(Relation.NEUTRAL) && Permission.FLY_NEUTRAL.has(this.getPlayer()))
+            return true;
 
         // admin bypass (ops) can fly.
         if (isAdminBypassing) {

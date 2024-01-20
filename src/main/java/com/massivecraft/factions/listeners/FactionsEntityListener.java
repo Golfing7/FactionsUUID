@@ -156,6 +156,10 @@ public class FactionsEntityListener extends AbstractListener {
             return;
         }
 
+        boolean worldIgnored = FactionsPlugin.getInstance().getConfigManager().getMainConfig().commands().fly().ignoreDisableInWorlds().contains(player.getWorld().getName());
+        if (player.getAllowFlight() && worldIgnored)
+            return;
+
         FPlayer fPlayer = FPlayers.getInstance().getByPlayer(player);
         if (fPlayer.isFlying()) {
             fPlayer.setFlying(false, true);

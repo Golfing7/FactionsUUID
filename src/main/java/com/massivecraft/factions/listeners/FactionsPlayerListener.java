@@ -321,7 +321,11 @@ public class FactionsPlayerListener extends AbstractListener {
         boolean changedFaction = (factionFrom != factionTo);
 
         free: if (plugin.conf().commands().fly().isEnable() && !me.isAdminBypassing() && !Permission.FLY_ANY.has(player)) {
-            boolean canFly = me.canFlyInFactionTerritory(factionTo);
+            boolean worldIgnored = FactionsPlugin.getInstance().getConfigManager().getMainConfig().commands().fly().ignoreDisableInWorlds().contains(player.getWorld().getName());
+            if (worldIgnored && player.getAllowFlight())
+                break free;
+
+            boolean canFly = me.canFlyInFactionTerritory(factionTo) && Permission.FLY.has(player);
             boolean canEssentialsFly = me.getPlayer().hasPermission("essentials.fly");
             if (!changedFaction){
                 if (canFly && !canFlyPreClaim && me.isFlying() && plugin.conf().commands().fly().isDisableFlightDuringAutoclaim() && !canEssentialsFly) {
@@ -736,51 +740,36 @@ public class FactionsPlayerListener extends AbstractListener {
         if(fPlayer != null && fPlayer.isAdminBypassing())return;
         Inventory openInv = event.getWhoClicked().getOpenInventory().getTopInventory();
 
-        Inventory bottomInventory = event.getWhoClicked().getOpenInventory().getBottomInventory();
+        if(!(openInv.getHolder() instanceof FChestHolder))return;
+
+        if(!FactionsPlugin.getInstance().getConfigManager().getMainConfig().upgrades().chest().preventSpawnersInChest())return;
+
+        Material mobSpawnerMaterial = MaterialDb.get("MOB_SPAWNER");
+        if (event.getCursor() != null && (event.getCursor().getType() == mobSpawnerMaterial || event.getCursor().getType().name().contains("SHULKER_BOX"))) {
+            event.setCancelled(true);
+            event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+            return;
+        }
+
+        if (event.getCurrentItem() != null && (event.getCurrentItem().getType() == mobSpawnerMaterial || event.getCurrentItem().getType().name().contains("SHULKER_BOX"))) {
+            event.setCancelled(true);
+            event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+        }
+    }
+
+    public void handleChestDrag(InventoryDragEvent event){
+        FPlayer fPlayer = FPlayers.getInstance().getById(event.getWhoClicked().getUniqueId().toString());
+        if(fPlayer != null && fPlayer.isAdminBypassing())return;
+        Inventory openInv = event.getWhoClicked().getOpenInventory().getTopInventory();
 
         if(!(openInv.getHolder() instanceof FChestHolder))return;
 
         if(!FactionsPlugin.getInstance().getConfigManager().getMainConfig().upgrades().chest().preventSpawnersInChest())return;
 
-        if(event.getClick() == ClickType.NUMBER_KEY){
-            ItemStack keyedItem = event.getWhoClicked().getInventory().getItem(event.getHotbarButton());
-
-            if(keyedItem != null && (keyedItem.getType() == MaterialDb.get("MOB_SPAWNER") || keyedItem.getType().name().contains("SHULKER_BOX"))){
-                event.setCancelled(true);
-                event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
-                return;
-            }
-        }
-
-        if(event.getCurrentItem() != null && (event.getCurrentItem().getType() == MaterialDb.get("MOB_SPAWNER") || event.getCurrentItem().getType().name().contains("SHULKER_BOX"))){
+        Material mobSpawnerMaterial = MaterialDb.get("MOB_SPAWNER");
+        if ((event.getOldCursor().getType() == mobSpawnerMaterial || event.getOldCursor().getType().name().contains("SHULKER_BOX"))) {
             event.setCancelled(true);
             event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
-            return;
-        }
-
-        if(event.getCursor() != null && (event.getCursor().getType() == MaterialDb.get("MOB_SPAWNER") || event.getCursor().getType().name().contains("SHULKER_BOX"))){
-            event.setCancelled(true);
-            event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
-            return;
-        }
-
-        if(openInv.getSize() > event.getSlot()){
-            ItemStack rawTop = openInv.getItem(event.getSlot());
-
-            if(rawTop != null && (rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER")) || rawTop.getType().name().contains("SHULKER_BOX"))){
-                event.setCancelled(true);
-                event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
-                return;
-            }
-        }
-
-        if(bottomInventory.getSize() > event.getSlot()){
-            ItemStack rawTop = bottomInventory.getItem(event.getSlot());
-
-            if(rawTop != null && (rawTop.getType().equals(MaterialDb.get("MOB_SPAWNER")) || rawTop.getType().name().contains("SHULKER_BOX"))){
-                event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
-                event.setCancelled(true);
-            }
         }
     }
 
@@ -821,6 +810,8 @@ public class FactionsPlayerListener extends AbstractListener {
         if (!plugin.worldUtil().isEnabled(event.getWhoClicked().getWorld())) {
             return;
         }
+
+        handleChestDrag(event);
 
         if (event.getInventory().getHolder() instanceof GUI) {
             event.setCancelled(true);

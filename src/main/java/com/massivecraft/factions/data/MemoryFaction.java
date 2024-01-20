@@ -1030,12 +1030,19 @@ public abstract class MemoryFaction implements Faction, EconomyParticipator {
                     FactionsPlugin.getInstance().conf().upgrades().chest().getNumber(getUpgrade(UpgradeType.CHEST)) * 9,
                     TextUtil.parseColor(FactionsPlugin.getInstance().conf().upgrades().chest().getChestName()));
 
+            ItemStack[] itemStacks = new ItemStack[0];
             try{
-                this.inventory.setContents(ItemBase64.itemStackArrayFromBase64(this.items));
-            }catch(IOException exc){
+                itemStacks = ItemBase64.itemStackArrayFromBase64(this.items);
+                this.inventory.setContents(itemStacks);
+            } catch(IOException exc){
                 exc.printStackTrace();
 
                 Bukkit.getLogger().severe("Not able to save " + this.getTag() + "'s chest data!");
+            } catch (IllegalArgumentException exc) {
+                exc.printStackTrace();
+
+                Bukkit.getLogger().severe("Failed to set contents of " + this.getTag() + "'s chest data. (Length was: " + itemStacks.length + ")");
+                this.items = ItemBase64.itemStackArrayToBase64(new ItemStack[0]);
             }
         }
         return inventory;

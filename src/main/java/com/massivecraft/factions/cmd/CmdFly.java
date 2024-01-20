@@ -78,6 +78,10 @@ public class CmdFly extends FCommand {
     }
 
     private boolean flyTest(final CommandContext context, boolean notify) {
+        boolean worldIgnored = FactionsPlugin.getInstance().getConfigManager().getMainConfig().commands().fly().ignoreDisableInWorlds().contains(context.player.getWorld().getName());
+        if (worldIgnored && context.fPlayer.getPlayer().getAllowFlight())
+            return true;
+
         if (!context.fPlayer.canFlyAtLocation()) {
             if (notify) {
                 Faction factionAtLocation = Board.getInstance().getFactionAt(context.fPlayer.getLastStoodAt());
