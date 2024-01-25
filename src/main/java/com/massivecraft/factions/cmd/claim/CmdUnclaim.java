@@ -91,7 +91,7 @@ public class CmdUnclaim extends FCommand {
     private boolean unClaim(FLocation target, CommandContext context, Faction faction, SpiralTask spiralTask) {
         Faction targetFaction = Board.getInstance().getFactionAt(target);
 
-        if (!targetFaction.equals(faction)) {
+        if (!targetFaction.equals(faction) && !context.fPlayer.isAdminBypassing()) {
             context.msg(TL.COMMAND_UNCLAIM_WRONGFACTIONOTHER);
             return false;
         }

@@ -37,7 +37,7 @@ public class FPromoteCommand extends FCommand {
             return;
         }
 
-        if (!target.getFaction().equals(context.faction)) {
+        if (!target.getFaction().equals(context.faction) && !context.fPlayer.isAdminBypassing()) {
             context.msg(TL.COMMAND_PROMOTE_WRONGFACTION, target.getName());
             return;
         }
@@ -51,7 +51,7 @@ public class FPromoteCommand extends FCommand {
         }
 
         // Don't allow people to promote people to their same or higher rnak.
-        if (context.fPlayer.getRole().value <= promotion.value) {
+        if (context.fPlayer.getRole().value <= promotion.value && !context.fPlayer.isAdminBypassing()) {
             context.msg(TL.COMMAND_PROMOTE_NOT_ALLOWED);
             return;
         }

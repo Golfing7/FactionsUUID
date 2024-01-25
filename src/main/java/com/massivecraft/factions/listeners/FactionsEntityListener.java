@@ -121,17 +121,20 @@ public class FactionsEntityListener extends AbstractListener {
                 }
             }
 
-            if (playerHurt) {
-                cancelFStuckTeleport((Player) damagee);
-                if ((damager instanceof Player) || plugin.conf().commands().fly().isDisableOnHurtByMobs()) {
-                    cancelFFly((Player) damagee);
+            // Players damaging themselves should never count.
+            if (damager != damagee) {
+                if (playerHurt) {
+                    cancelFStuckTeleport((Player) damagee);
+                    if ((damager instanceof Player) || plugin.conf().commands().fly().isDisableOnHurtByMobs()) {
+                        cancelFFly((Player) damagee);
+                    }
                 }
-            }
-            if (damager instanceof Player) {
-                cancelFStuckTeleport((Player) damager);
-                if ((playerHurt && plugin.conf().commands().fly().isDisableOnHurtingPlayers()) ||
-                        (!playerHurt && plugin.conf().commands().fly().isDisableOnHurtingMobs())) {
-                    cancelFFly((Player) damager);
+                if (damager instanceof Player) {
+                    cancelFStuckTeleport((Player) damager);
+                    if ((playerHurt && plugin.conf().commands().fly().isDisableOnHurtingPlayers()) ||
+                            (!playerHurt && plugin.conf().commands().fly().isDisableOnHurtingMobs())) {
+                        cancelFFly((Player) damager);
+                    }
                 }
             }
         }
