@@ -3,6 +3,7 @@ package com.massivecraft.factions.cmd;
 import com.massivecraft.factions.FPlayer;
 import com.massivecraft.factions.FPlayers;
 import com.massivecraft.factions.Faction;
+import com.massivecraft.factions.event.FPlayerChangeLeaderEvent;
 import com.massivecraft.factions.event.FPlayerJoinEvent;
 import com.massivecraft.factions.perms.Role;
 import com.massivecraft.factions.struct.Permission;
@@ -77,6 +78,7 @@ public class CmdAdmin extends FCommand {
             admin.setRole(Role.COLEADER);
         }
         fyou.setRole(Role.ADMIN);
+        Bukkit.getServer().getPluginManager().callEvent(new FPlayerChangeLeaderEvent(fyou, admin));
         context.msg(TL.COMMAND_ADMIN_PROMOTES, fyou.describeTo(context.fPlayer, true));
 
         // Inform all players

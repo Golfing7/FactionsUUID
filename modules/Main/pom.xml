@@ -17,7 +17,6 @@
         <defaultGoal>clean package install</defaultGoal>
         <finalName>${project.name}</finalName>
         <sourceDirectory>../../src/main/java</sourceDirectory>
-        <testSourceDirectory>../../src/test/java</testSourceDirectory>
         <directory>../../target</directory>
         <resources>
             <resource>
@@ -150,29 +149,8 @@
             <groupId>net.techcable.tacospigot</groupId>
             <artifactId>WineSpigot</artifactId>
             <version>1.8.8-R0.2-SNAPSHOT</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>bungeecord-chat</artifactId>
-                    <groupId>net.md-5</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>persistence-api</artifactId>
-                    <groupId>javax.persistence</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>junit</artifactId>
-                    <groupId>junit</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>gson</artifactId>
-                    <groupId>com.google.code.gson</groupId>
-                </exclusion>
-            </exclusions>
+            <scope>system</scope>
+            <systemPath>D:/CUSTOM/Personal Corporation/Resources/Dependency/WineSpigot-1.8.8-R0.2-SNAPSHOT.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>net.milkbowl.vault</groupId>
@@ -318,16 +296,9 @@
             <systemPath>${project.basedir}/../../locallibs/CoreProtect.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>mkremins</groupId>
+            <groupId>mkremins.fanciful</groupId>
             <artifactId>fanciful</artifactId>
             <version>0.4.0-SNAPSHOT</version>
-            <scope>compile</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>gson</artifactId>
-                    <groupId>com.google.code.gson</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.dynmap</groupId>
