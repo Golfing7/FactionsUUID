@@ -99,11 +99,6 @@ public class FactionsBlockListener implements Listener {
             return;
         }
 
-        if (FactionsPlugin.getInstance().conf().factions().protection().getBreakExceptions().contains(event.getBlock().getType()) &&
-                Board.getInstance().getFactionAt(new FLocation(event.getBlock().getLocation())).isNormal()) {
-            return;
-        }
-
         if (!playerCanBuildDestroyBlock(event.getPlayer(), event.getBlock().getLocation(), PermissibleAction.DESTROY, false)) {
             event.setCancelled(true);
         }
@@ -112,11 +107,6 @@ public class FactionsBlockListener implements Listener {
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onBlockDamage(BlockDamageEvent event) {
         if (!plugin.worldUtil().isEnabled(event.getBlock().getWorld())) {
-            return;
-        }
-
-        if (FactionsPlugin.getInstance().conf().factions().protection().getBreakExceptions().contains(event.getBlock().getType()) &&
-                Board.getInstance().getFactionAt(new FLocation(event.getBlock().getLocation())).isNormal()) {
             return;
         }
 
@@ -324,6 +314,11 @@ public class FactionsBlockListener implements Listener {
         String name = player.getName();
         MainConfig conf = FactionsPlugin.getInstance().conf();
         if (conf.factions().protection().getPlayersWhoBypassAllProtection().contains(name)) {
+            return true;
+        }
+
+        if (FactionsPlugin.getInstance().conf().factions().protection().getBreakExceptions().contains(location.getBlock().getType()) &&
+                Board.getInstance().getFactionAt(new FLocation(location)).isNormal()) {
             return true;
         }
 
