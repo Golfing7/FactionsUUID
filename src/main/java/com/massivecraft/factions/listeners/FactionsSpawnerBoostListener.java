@@ -30,7 +30,7 @@ public class FactionsSpawnerBoostListener extends AbstractListener{
 
     private static Method getSpawner;
 
-    private static boolean doSpawnerUpgrade;
+    private static boolean doSpawnerUpgrade = true;
 
     static{
         try{
