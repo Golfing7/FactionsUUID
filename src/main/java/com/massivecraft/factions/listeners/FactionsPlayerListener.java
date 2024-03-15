@@ -105,7 +105,7 @@ public class FactionsPlayerListener extends AbstractListener {
 
     private void checkValidLoginLocation(FPlayer fPlayer)
     {
-        long time = System.currentTimeMillis() - fPlayer.getLastLoginTime() / 60000;
+        long time = (System.currentTimeMillis() - fPlayer.getLastLoginTime()) / 60000;
 
         if(time < FactionsPlugin.getInstance().conf().factions().landRaidControl().logout().getOfflineMinutesSendToSpawn()){
             return;
