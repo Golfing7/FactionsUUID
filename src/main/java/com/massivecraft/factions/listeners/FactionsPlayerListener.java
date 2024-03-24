@@ -68,7 +68,7 @@ public class FactionsPlayerListener extends AbstractListener {
     public FactionsPlayerListener(FactionsPlugin plugin) {
         this.plugin = plugin;
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            initPlayer(player);
+            FPlayer fPlayer = initPlayer(player);
         }
     }
 
@@ -152,9 +152,6 @@ public class FactionsPlayerListener extends AbstractListener {
         ((MemoryFPlayer) me).setName(player.getName());
 
         this.plugin.getLandRaidControl().onJoin(me);
-        // Update the lastLoginTime for this fplayer
-        me.setLastLoginTime(System.currentTimeMillis());
-
         // Store player's current FLocation and notify them where they are
         me.setLastStoodAt(new FLocation(player.getLocation()));
 

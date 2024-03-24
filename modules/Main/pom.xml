@@ -17,7 +17,6 @@
         <defaultGoal>clean package install</defaultGoal>
         <finalName>${project.name}</finalName>
         <sourceDirectory>../../src/main/java</sourceDirectory>
-        <testSourceDirectory>../../src/test/java</testSourceDirectory>
         <directory>../../target</directory>
         <resources>
             <resource>
@@ -33,10 +32,6 @@
                     <source>1.8</source>
                     <target>1.8</target>
                 </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -500,6 +495,10 @@
         <repository>
             <id>magic</id>
             <url>https://maven.elmakers.com/repository/</url>
+        </repository>
+        <repository>
+            <id>local</id>
+            <url>file://../../locallibs/m2/</url>
         </repository>
     </repositories>
 </project>

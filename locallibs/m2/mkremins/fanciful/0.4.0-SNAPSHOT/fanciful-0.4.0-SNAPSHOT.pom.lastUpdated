@@ -1,0 +1,24 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Wed Mar 20 16:38:10 EDT 2024
+https\://repo.extendedclip.com/content/repositories/placeholderapi/.lastUpdated=1710967090292
+https\://maven.elmakers.com/repository/.error=
+file\://locallibs/m2/.lastUpdated=1710967019370
+file\://locallibs/m2/.error=
+https\://papermc.io/repo/repository/maven-public/.error=
+https\://repo.mikeprimm.com/.error=
+https\://github.com/factions-site/repo/raw/public/.lastUpdated=1710967089585
+https\://nexus.hc.to/content/repositories/pub_releases/.lastUpdated=1710967090328
+https\://repo.citizensnpcs.co/.lastUpdated=1710967090214
+https\://hub.spigotmc.org/nexus/content/groups/public/.error=
+https\://repo.citizensnpcs.co/.error=
+https\://repo.extendedclip.com/content/repositories/placeholderapi/.error=
+https\://repo.mikeprimm.com/.lastUpdated=1710967089886
+https\://github.com/factions-site/repo/raw/public/.error=
+file\://../../locallibs/m2/.lastUpdated=1710967090415
+https\://repo.spongepowered.org/maven/.error=
+file\://../../locallibs/m2/.error=
+https\://repo.spongepowered.org/maven/.lastUpdated=1710967089966
+https\://papermc.io/repo/repository/maven-public/.lastUpdated=1710967089754
+https\://hub.spigotmc.org/nexus/content/groups/public/.lastUpdated=1710967089806
+https\://maven.elmakers.com/repository/.lastUpdated=1710967090414
+https\://nexus.hc.to/content/repositories/pub_releases/.error=
