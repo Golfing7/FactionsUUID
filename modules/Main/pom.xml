@@ -457,6 +457,18 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/../../locallibs/CombatTagPlus.jar</systemPath>
         </dependency>
+        <dependency>
+            <groupId>not.savage</groupId>
+            <artifactId>ShockChat</artifactId>
+            <version>1.1.4</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>not.savage</groupId>
+            <artifactId>SVCommonLib</artifactId>
+            <version>1.0.16</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <repositories>
@@ -495,6 +507,10 @@
         <repository>
             <id>magic</id>
             <url>https://maven.elmakers.com/repository/</url>
+        </repository>
+        <repository>
+            <id>supreme-ventures-nexus</id>
+            <url>https://nexus.supremeventures.ca/repository/maven-releases/</url>
         </repository>
         <repository>
             <id>local</id>
