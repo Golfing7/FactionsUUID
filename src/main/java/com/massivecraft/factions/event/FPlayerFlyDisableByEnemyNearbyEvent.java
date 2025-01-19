@@ -18,6 +18,7 @@ public class FPlayerFlyDisableByEnemyNearbyEvent extends Event implements Cancel
 
     public FPlayerFlyDisableByEnemyNearbyEvent(FPlayer fPlayer)
     {
+        super(true);
         this.fPlayer = fPlayer;
     }
 

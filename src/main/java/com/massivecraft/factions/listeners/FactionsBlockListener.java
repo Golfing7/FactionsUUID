@@ -184,6 +184,10 @@ public class FactionsBlockListener implements Listener {
         if(fPlayer.isAdminBypassing())
             return;
 
+        if(FactionsPlugin.getInstance().getConfigManager().getMainConfig().factions().spawning().isAllowSpawnerPlacementInWild()
+                || event.getBlock().getType() != spawnerMaterial)
+            return;
+
         if (factionAt != null && !factionAt.isWilderness() &&
                 FactionsPlugin.getInstance().getConfigManager().getMainConfig().factions().spawning().isForceSpawnersToBePlacedInSpawnerChunks()) {
             FLocation chunkFLoc = new FLocation(event.getBlock().getChunk());
@@ -193,10 +197,6 @@ public class FactionsBlockListener implements Listener {
                 return;
             }
         }
-
-        if(FactionsPlugin.getInstance().getConfigManager().getMainConfig().factions().spawning().isAllowSpawnerPlacementInWild()
-                || event.getBlock().getType() != spawnerMaterial)
-            return;
 
         //Get the faction at the location.
         if(factionAt == null || !factionAt.isWilderness())
