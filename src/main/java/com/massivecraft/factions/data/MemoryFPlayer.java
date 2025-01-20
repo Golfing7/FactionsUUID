@@ -7,10 +7,7 @@ import com.massivecraft.factions.FPlayers;
 import com.massivecraft.factions.Faction;
 import com.massivecraft.factions.Factions;
 import com.massivecraft.factions.FactionsPlugin;
-import com.massivecraft.factions.event.FPlayerLeaveEvent;
-import com.massivecraft.factions.event.FPlayerToggleStealthEvent;
-import com.massivecraft.factions.event.FactionAutoDisbandEvent;
-import com.massivecraft.factions.event.LandClaimEvent;
+import com.massivecraft.factions.event.*;
 import com.massivecraft.factions.iface.EconomyParticipator;
 import com.massivecraft.factions.iface.RelationParticipator;
 import com.massivecraft.factions.integration.CombatTagPlusIntegration;
@@ -705,7 +702,10 @@ public abstract class MemoryFPlayer implements FPlayer {
         }
 
         int millisPerMinute = 60 * 1000;
-        this.alterPower(millisPassed * FactionsPlugin.getInstance().conf().factions().landRaidControl().power().getPowerPerMinute() / millisPerMinute);
+        double powerGained = millisPassed * FactionsPlugin.getInstance().conf().factions().landRaidControl().power().getPowerPerMinute() / millisPerMinute;
+        FPlayerCalculatePowerEvent powerEvent = new FPlayerCalculatePowerEvent(getFaction(), this, this.power, powerGained);
+        Bukkit.getPluginManager().callEvent(powerEvent);
+        this.alterPower(powerEvent.getPowerGained());
     }
 
     public void losePowerFromBeingOffline() {
