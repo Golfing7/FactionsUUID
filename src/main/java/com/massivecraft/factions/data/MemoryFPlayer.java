@@ -703,9 +703,16 @@ public abstract class MemoryFPlayer implements FPlayer {
 
         int millisPerMinute = 60 * 1000;
         double powerGained = millisPassed * FactionsPlugin.getInstance().conf().factions().landRaidControl().power().getPowerPerMinute() / millisPerMinute;
-        FPlayerCalculatePowerEvent powerEvent = new FPlayerCalculatePowerEvent(getFaction(), this, this.power, powerGained);
-        Bukkit.getPluginManager().callEvent(powerEvent);
-        this.alterPower(powerEvent.getPowerGained());
+        this.alterPower(powerGained);
+        if (Bukkit.isPrimaryThread()) {
+            FPlayerCalculatePowerEvent powerEvent = new FPlayerCalculatePowerEvent(getFaction(), this, this.power, powerGained);
+            Bukkit.getPluginManager().callEvent(powerEvent);
+        } else {
+            Bukkit.getScheduler().runTask(FactionsPlugin.getInstance(), () -> {
+                FPlayerCalculatePowerEvent powerEvent = new FPlayerCalculatePowerEvent(getFaction(), this, this.power, powerGained);
+                Bukkit.getPluginManager().callEvent(powerEvent);
+            });
+        }
     }
 
     public void losePowerFromBeingOffline() {

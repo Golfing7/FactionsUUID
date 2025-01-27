@@ -16,18 +16,14 @@ public class FPlayerCalculatePowerEvent extends FactionPlayerEvent {
         return oldPower;
     }
 
-    private double powerGained;
+    private final double powerGained;
 
     public double getPowerGained() {
         return powerGained;
     }
 
-    public void setPowerGained(double powerGained) {
-        this.powerGained = powerGained;
-    }
-
     public FPlayerCalculatePowerEvent(Faction faction, FPlayer fPlayer, double oldPower, double powerGained) {
-        super(faction, fPlayer, true);
+        super(faction, fPlayer);
 
         this.oldPower = oldPower;
         this.powerGained = powerGained;
