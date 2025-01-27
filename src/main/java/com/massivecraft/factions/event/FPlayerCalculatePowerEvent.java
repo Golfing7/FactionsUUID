@@ -27,7 +27,7 @@ public class FPlayerCalculatePowerEvent extends FactionPlayerEvent {
     }
 
     public FPlayerCalculatePowerEvent(Faction faction, FPlayer fPlayer, double oldPower, double powerGained) {
-        super(faction, fPlayer);
+        super(faction, fPlayer, true);
 
         this.oldPower = oldPower;
         this.powerGained = powerGained;

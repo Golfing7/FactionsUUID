@@ -16,6 +16,11 @@ public class FactionEvent extends Event {
         this.faction = faction;
     }
 
+    public FactionEvent(Faction faction, boolean async) {
+        super(async);
+        this.faction = faction;
+    }
+
     /**
      * Get the Faction involved in the event.
      *

@@ -15,6 +15,11 @@ public class FactionPlayerEvent extends FactionEvent {
         this.fPlayer = fPlayer;
     }
 
+    public FactionPlayerEvent(Faction faction, FPlayer fPlayer, boolean async) {
+        super(faction, async);
+        this.fPlayer = fPlayer;
+    }
+
     public FPlayer getfPlayer() {
         return this.fPlayer;
     }
