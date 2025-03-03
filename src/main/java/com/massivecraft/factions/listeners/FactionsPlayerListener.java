@@ -25,8 +25,6 @@ import com.massivecraft.factions.struct.Permission;
 import com.massivecraft.factions.util.*;
 import com.massivecraft.factions.util.material.MaterialDb;
 import net.coreprotect.CoreProtect;
-import net.coreprotect.CoreProtectAPI;
-import net.minecraft.server.v1_8_R3.Blocks;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -37,7 +35,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -912,7 +909,7 @@ public class FactionsPlayerListener extends AbstractListener {
             String material;
             try {
                 material = CraftMagicNumbers.getMaterial(CraftMagicNumbers.getBlock(Integer.parseInt(strings[5]))).name().toLowerCase();
-            } catch (NullPointerException exc) {
+            } catch (Throwable exc) {
                 // Can be thrown from a material that doesn't exist.
                 material = "Unknown";
             }
