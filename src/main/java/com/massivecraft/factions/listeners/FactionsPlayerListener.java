@@ -747,6 +747,14 @@ public class FactionsPlayerListener extends AbstractListener {
         if(!FactionsPlugin.getInstance().getConfigManager().getMainConfig().upgrades().chest().preventSpawnersInChest())return;
 
         Material mobSpawnerMaterial = MaterialDb.get("MOB_SPAWNER");
+        if (event.getClick().name().contains("SWAP_OFFHAND")) {
+            ItemStack offhandItem = event.getWhoClicked().getInventory().getItem(40);
+            if (offhandItem != null && mobSpawnerMaterial == offhandItem.getType()) {
+                event.setCancelled(true);
+                event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+            }
+        }
+
         if (event.getCursor() != null && (event.getCursor().getType() == mobSpawnerMaterial || event.getCursor().getType().name().contains("SHULKER_BOX"))) {
             event.setCancelled(true);
             event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
