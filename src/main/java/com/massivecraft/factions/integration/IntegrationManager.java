@@ -39,7 +39,6 @@ public class IntegrationManager implements Listener {
                 }
             }
         }),
-        MAGIC("Magic", (p) -> Magic.init(p)), // RESIST THE URGE TO REPLACE WITH LAMBDA REFERENCE
         PLACEHOLDERAPI("PlaceholderAPI", (p) -> FactionsPlugin.getInstance().setupPlaceholderAPI()),
         PLACEHOLDERAPI_OTHER("MVdWPlaceholderAPI", (p) -> FactionsPlugin.getInstance().setupOtherPlaceholderAPI()),
         WORLDGUARD("WorldGuard", (plugin) -> {

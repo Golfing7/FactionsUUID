@@ -1,7 +1,6 @@
 package com.massivecraft.factions.integration;
 
-import com.earth2me.essentials.IEssentials;
-import com.earth2me.essentials.Teleport;
+import com.earth2me.essentials.AsyncTeleport;
 import com.earth2me.essentials.Trade;
 import com.earth2me.essentials.User;
 import com.massivecraft.factions.*;
@@ -9,12 +8,15 @@ import com.massivecraft.factions.iface.EconomyParticipator;
 import com.massivecraft.factions.listeners.EssentialsListener;
 import com.massivecraft.factions.perms.Relation;
 import com.massivecraft.factions.struct.Permission;
+import net.ess3.api.IEssentials;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 public class Essentials {
 
@@ -44,10 +46,10 @@ public class Essentials {
             return false;
         }
 
-        Teleport teleport = essentials.getUser(player).getTeleport();
+        AsyncTeleport teleport = essentials.getUser(player).getAsyncTeleport();
         Trade trade = new Trade(FactionsPlugin.getInstance().conf().economy().getCostHome(), essentials);
         try {
-            teleport.teleport(loc, trade);
+            teleport.teleport(loc, trade, PlayerTeleportEvent.TeleportCause.PLUGIN, new CompletableFuture<>());
         } catch (Exception e) {
             player.sendMessage(ChatColor.RED.toString() + e.getMessage());
         }
