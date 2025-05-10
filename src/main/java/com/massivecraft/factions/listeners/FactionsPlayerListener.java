@@ -35,6 +35,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -739,31 +740,43 @@ public class FactionsPlayerListener extends AbstractListener {
     public void handleChestClick(InventoryClickEvent event){
         if(event.getSlot() < 0)return;
         FPlayer fPlayer = FPlayers.getInstance().getById(event.getWhoClicked().getUniqueId().toString());
-        if(fPlayer != null && fPlayer.isAdminBypassing())return;
+        if(fPlayer != null && fPlayer.isAdminBypassing())
+            return;
         Inventory openInv = event.getWhoClicked().getOpenInventory().getTopInventory();
 
-        if(!(openInv.getHolder() instanceof FChestHolder))return;
+        if(!(openInv.getHolder() instanceof FChestHolder))
+            return;
 
-        if(!FactionsPlugin.getInstance().getConfigManager().getMainConfig().upgrades().chest().preventSpawnersInChest())return;
+        boolean blockSpawners = FactionsPlugin.getInstance().getConfigManager().getMainConfig().upgrades().chest().preventSpawnersInChest();
+        boolean blockShulkers = FactionsPlugin.getInstance().getConfigManager().getMainConfig().upgrades().chest().preventShulkerBoxesInChest();
 
         Material mobSpawnerMaterial = MaterialDb.get("MOB_SPAWNER");
         if (event.getClick().name().contains("SWAP_OFFHAND")) {
             ItemStack offhandItem = event.getWhoClicked().getInventory().getItem(40);
-            if (offhandItem != null && mobSpawnerMaterial == offhandItem.getType()) {
+            if (offhandItem != null && (blockSpawners && mobSpawnerMaterial == offhandItem.getType() || blockShulkers && offhandItem.getType().name().contains("SHULKER_BOX"))) {
                 event.setCancelled(true);
                 event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
             }
         }
 
-        if (event.getCursor() != null && (event.getCursor().getType() == mobSpawnerMaterial || event.getCursor().getType().name().contains("SHULKER_BOX"))) {
+        if (event.getCursor() != null && (blockSpawners && event.getCursor().getType() == mobSpawnerMaterial || blockShulkers && event.getCursor().getType().name().contains("SHULKER_BOX"))) {
             event.setCancelled(true);
             event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
             return;
         }
 
-        if (event.getCurrentItem() != null && (event.getCurrentItem().getType() == mobSpawnerMaterial || event.getCurrentItem().getType().name().contains("SHULKER_BOX"))) {
+        if (event.getCurrentItem() != null && (blockSpawners && event.getCurrentItem().getType() == mobSpawnerMaterial || blockShulkers && event.getCurrentItem().getType().name().contains("SHULKER_BOX"))) {
             event.setCancelled(true);
             event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+        }
+
+        if(event.getClick() == ClickType.NUMBER_KEY){
+            ItemStack keyedItem = event.getWhoClicked().getInventory().getItem(event.getHotbarButton());
+
+            if(keyedItem != null && (blockSpawners && keyedItem.getType() == mobSpawnerMaterial || blockShulkers && keyedItem.getType().name().contains("SHULKER_BOX"))){
+                event.setCancelled(true);
+                event.getWhoClicked().sendMessage(TextUtil.parseColor(TL.PLAYER_CANTADDTHATITEM.getDefault()));
+            }
         }
     }
 
