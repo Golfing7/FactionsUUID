@@ -1147,6 +1147,10 @@ public abstract class MemoryFPlayer implements FPlayer {
     }
 
     public void setFlying(boolean fly, boolean damage) {
+        // Don't do anything if flight is disabled.
+        if (!FactionsPlugin.getInstance().getConfigManager().getMainConfig().commands().fly().isEnable())
+            return;
+
         if(fly && !this.isFlying() && FactionsPlugin.getInstance().isSOTW() && !Permission.SOTW.has(this.getPlayer())){
             this.msg(TL.PLAYER_SOTW_NOFLY);
             return;
@@ -1194,6 +1198,10 @@ public abstract class MemoryFPlayer implements FPlayer {
     }
 
     public void setAutoFlying(boolean autoFly) {
+        // Don't do anything if flight is disabled.
+        if (!FactionsPlugin.getInstance().getConfigManager().getMainConfig().commands().fly().isEnable())
+            return;
+
         msg(TL.COMMAND_FLY_AUTO, autoFly ? TL.GENERIC_ENABLED : TL.GENERIC_DISABLED);
         this.isAutoFlying = autoFly;
     }
