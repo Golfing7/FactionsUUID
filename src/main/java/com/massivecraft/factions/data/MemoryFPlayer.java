@@ -1223,7 +1223,7 @@ public abstract class MemoryFPlayer implements FPlayer {
     }
 
     public boolean canFlyInFactionTerritory(Faction faction) {
-        if(this.getPlayer() != null && Permission.FLY_ANY.has(this.getPlayer()))
+        if(this.getPlayer() != null && (Permission.FLY_ANY.has(this.getPlayer()) || getPlayer().getGameMode() == GameMode.SPECTATOR))
             return true;
 
         if (faction.isWilderness()) {
