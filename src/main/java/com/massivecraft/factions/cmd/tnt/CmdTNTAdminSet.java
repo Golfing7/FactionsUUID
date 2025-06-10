@@ -16,7 +16,7 @@ public class CmdTNTAdminSet extends FCommand {
         this.requiredArgs.add("faction");
         this.requiredArgs.add("amount");
 
-        this.requirements = new CommandRequirements.Builder(Permission.TNT_ADMIN).playerOnly().build();
+        this.requirements = new CommandRequirements.Builder(Permission.TNT_ADMIN).build();
     }
 
     @Override
@@ -28,7 +28,7 @@ public class CmdTNTAdminSet extends FCommand {
 
         faction.setTNTBank(amount);
 
-        context.msg(TL.COMMAND_TNT_ADMINSET_USAGE, faction.describeTo(context.fPlayer), amount + "");
+        context.msg(TL.COMMAND_TNT_ADMINSET_USAGE, context.fPlayer != null ? faction.describeTo(context.fPlayer) : faction.getTag(), amount + "");
     }
 
     @Override

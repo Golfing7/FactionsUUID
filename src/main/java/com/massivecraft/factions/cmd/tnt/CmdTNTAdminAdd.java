@@ -14,7 +14,7 @@ public class CmdTNTAdminAdd extends FCommand {
         this.requiredArgs.add("faction");
         this.requiredArgs.add("amount");
 
-        this.requirements = new CommandRequirements.Builder(Permission.TNT_ADMIN).playerOnly().build();
+        this.requirements = new CommandRequirements.Builder(Permission.TNT_ADMIN).build();
     }
 
     @Override
@@ -25,7 +25,7 @@ public class CmdTNTAdminAdd extends FCommand {
 
         faction.setTNTBank(Math.max(faction.getTNTBank() + amount, 0));
 
-        context.msg(TL.COMMAND_TNT_ADMINADD_ADDSUCCESSFUL, amount + "", faction.describeTo(context.fPlayer));
+        context.msg(TL.COMMAND_TNT_ADMINADD_ADDSUCCESSFUL, amount + "", context.fPlayer != null ? faction.describeTo(context.fPlayer) : faction.getTag());
     }
 
     @Override
