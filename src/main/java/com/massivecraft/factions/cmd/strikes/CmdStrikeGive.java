@@ -7,6 +7,7 @@ import com.massivecraft.factions.FactionsPlugin;
 import com.massivecraft.factions.cmd.CommandContext;
 import com.massivecraft.factions.cmd.CommandRequirements;
 import com.massivecraft.factions.cmd.FCommand;
+import com.massivecraft.factions.event.FactionStrikeAddEvent;
 import com.massivecraft.factions.struct.Permission;
 import com.massivecraft.factions.util.TL;
 import com.massivecraft.factions.util.TextUtil;
@@ -41,7 +42,11 @@ public class CmdStrikeGive extends FCommand {
         }
 
         String trim = stringBuilder.toString().trim();
-        toStrike.addStrike(trim, System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        FactionStrikeAddEvent event = new FactionStrikeAddEvent(toStrike, context.fPlayer, trim, now);
+        Bukkit.getPluginManager().callEvent(event);
+        if(!event.isCancelled())
+            toStrike.addStrike(event.getReason(), event.getTime());
 
         if(FactionsPlugin.getInstance().getConfigManager().getMainConfig().commands().strike().broadcastStrikes()){
             for(Player player : Bukkit.getOnlinePlayers()){

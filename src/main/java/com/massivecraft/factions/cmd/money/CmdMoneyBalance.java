@@ -13,6 +13,7 @@ public class CmdMoneyBalance extends MoneyCommand {
         super();
         this.aliases.add("b");
         this.aliases.add("balance");
+        this.aliases.add("bal");
 
         //this.requiredArgs.add("");
         this.optionalArgs.put("faction", "yours");
